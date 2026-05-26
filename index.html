@@ -1,1 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Near-Earth Asteroids: Close Approaches</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+        .chart-container {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        /* Tooltip CSS for the Interaction */
+        .tooltip {
+            position: absolute;
+            text-align: left;
+            padding: 10px;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .axis-label {
+            fill: #aaa;
+            font-size: 14px;
+        }
+        .tick text {
+            fill: #aaa;
+        }
+        .tick line, .domain {
+            stroke: #555;
+        }
+        /* Prototype Writeup Styles */
+        .writeup {
+            max-width: 800px;
+            margin-top: 2rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
 
+    <h2>Projected Earth Close-Approaches (2026 - 2125)</h2>
+    <div class="chart-container" id="scatterplot"></div>
+
+    <div class="writeup">
+        <h3>Initial Prototype Writeup</h3>
+        <p><strong>1. What have you done so far?</strong></p>
+        <p>Our team, The Pickle Farmers, has finalized our dataset selection, utilizing the NASA Near-Earth Asteroids Dataset to explore orbital mechanics and impact risks. We have established our GitHub repository, deployed our initial GitHub Pages site, and laid out the structural HTML and CSS foundation for our explorable explanation. During the proposal phase, we mapped out the five core visualizations that will anchor our narrative, ranging from a global top-down solar system rendering to a detailed timeline of projected Earth close-approaches. Currently, we are initializing the basic Three.js scene for the 3D space rendering and configuring the D3.js framework to handle our 2D data overlays and tooltips.</p>
+        
+        <p><strong>2. What will be the most challenging part of your project to design and why?</strong></p>
+        <p>The most challenging aspect of our project will undoubtedly be seamlessly integrating the 3D Three.js environment with the 2D D3.js interactive scrollytelling elements. Rendering hundreds of orbital trajectories simultaneously poses a significant performance risk, so we will need to carefully optimize our data handling to prevent browser lag. Additionally, choreographing the camera transitions—moving fluidly from a macro view of the near-Earth asteroid population down to an isolated orbit—will require complex state management and spatial mathematics. We anticipate that keeping the user oriented during these dynamic zooms, while simultaneously updating the informative tooltips and annotations, will require heavy iteration on the user experience design.</p>
+    </div>
+
+    <script>
+        // 1. SETUP DIMENSIONS & SVG
+        const width = 800;
+        const height = 500;
+        const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        const svg = d3.select("#scatterplot")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Tooltip setup (The required interaction)
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip");
+
+        // 2. SAMPLE DATA
+        // For the final project, replace this array with: 
+        // d3.csv("nasa_asteroids.csv").then(data => { ... chart code ... });
+        const data = [
+            { name: "Apophis", year: 2029, miss_distance_ld: 0.1, diameter_m: 340, is_hazardous: true },
+            { name: "2023 DZ2", year: 2026, miss_distance_ld: 0.45, diameter_m: 50, is_hazardous: false },
+            { name: "Bennu", year: 2135, miss_distance_ld: 0.78, diameter_m: 490, is_hazardous: true },
+            { name: "4179 Toutatis", year: 2069, miss_distance_ld: 7.7, diameter_m: 5400, is_hazardous: true },
+            { name: "2012 TC4", year: 2050, miss_distance_ld: 0.13, diameter_m: 15, is_hazardous: false },
+            { name: "1950 DA", year: 2880, miss_distance_ld: 0.05, diameter_m: 1100, is_hazardous: true },
+            { name: "Florence", year: 2057, miss_distance_ld: 18.4, diameter_m: 4900, is_hazardous: true },
+            { name: "2020 CD3", year: 2030, miss_distance_ld: 2.1, diameter_m: 3, is_hazardous: false }
+        ].filter(d => d.year >= 2026 && d.year <= 2125); // Filter to proposed timeline
+
+        // 3. SCALES
+        // X-Axis: Year (Linear)
+        const xScale = d3.scaleLinear()
+            .domain([2026, 2125])
+            .range([0, innerWidth]);
+
+        // Y-Axis: Miss Distance (Log Scale as proposed)
+        const yScale = d3.scaleLog()
+            .domain([0.01, d3.max(data, d => d.miss_distance_ld) || 100]) // Prevent log(0)
+            .range([innerHeight, 0]);
+
+        // Size Scale: Asteroid Diameter (Sqrt scale is best for mapping area)
+        const sizeScale = d3.scaleSqrt()
+            .domain([0, d3.max(data, d => d.diameter_m)])
+            .range([3, 20]);
+
+        // Color Scale: Hazard Status
+        const colorScale = d3.scaleOrdinal()
+            .domain([true, false])
+            .range(["#ff7f50", "#00ffff"]); // Coral for hazard, Cyan for safe
+
+        // 4. AXES
+        const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d")); // Format as plain year
+        const yAxis = d3.axisLeft(yScale).ticks(5, "~s"); // Format log ticks cleanly
+
+        // Add X Axis
+        svg.append("g")
+            .attr("transform", `translate(0,${innerHeight})`)
+            .call(xAxis);
+        svg.append("text")
+            .attr("class", "axis-label")
+            .attr("x", innerWidth / 2)
+            .attr("y", innerHeight + 40)
+            .style("text-anchor", "middle")
+            .text("Year of Close Approach");
+
+        // Add Y Axis
+        svg.append("g")
+            .call(yAxis);
+        svg.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -innerHeight / 2)
+            .attr("y", -40)
+            .style("text-anchor", "middle")
+            .text("Miss Distance (Lunar Distances, Log Scale)");
+
+        // 5. DRAW CIRCLES WITH INTERACTION
+        svg.selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", d => xScale(d.year))
+            .attr("cy", d => yScale(d.miss_distance_ld))
+            .attr("r", d => sizeScale(d.diameter_m))
+            .attr("fill", d => colorScale(d.is_hazardous))
+            .attr("opacity", 0.8)
+            .attr("stroke", "#222")
+            .attr("stroke-width", 1)
+            // THE REQUIRED INTERACTION (Hover Tooltip)
+            .on("mouseover", function(event, d) {
+                d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2).attr("opacity", 1);
+                tooltip.transition().duration(200).style("opacity", 1);
+                tooltip.html(`
+                    <strong>${d.name}</strong><br/>
+                    Year: ${d.year}<br/>
+                    Miss Dist: ${d.miss_distance_ld} LD<br/>
+                    Diameter: ${d.diameter_m}m<br/>
+                    Hazardous: ${d.is_hazardous ? "Yes" : "No"}
+                `)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("left", (event.pageX + 10) + "px")
+                       .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(d) {
+                d3.select(this).attr("stroke", "#222").attr("stroke-width", 1).attr("opacity", 0.8);
+                tooltip.transition().duration(500).style("opacity", 0);
+            });
+
+    </script>
+</body>
+</html>
