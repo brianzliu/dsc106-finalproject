@@ -385,7 +385,7 @@
     $('search').value=''; $('results').classList.remove('show');
   }
   function deselect(){
-    selected=null;following=false;AST.forEach(o=>o.dim=false);
+    selected=null;following=false;clearTrails();
     $('card').classList.remove('show');selRing.material.opacity=0;link.material.opacity=0;
     selTick.style.display='none';$('status').textContent='';
   }
@@ -515,13 +515,17 @@
     const advancing=playing&&!scrubbing;
 
     for(const el of AST){
-      if(el.hidden){el.line.visible=false;dotCol[el.idx*3]=dotCol[el.idx*3+1]=dotCol[el.idx*3+2]=0;continue;}
+      const sel=(el===selected);
+      // When an asteroid is selected, isolate it: hide every other asteroid so
+      // only its trajectory relative to Earth is shown.
+      if(el.hidden || (selected && !sel)){
+        el.line.visible=false;dotCol[el.idx*3]=dotCol[el.idx*3+1]=dotCol[el.idx*3+2]=0;continue;
+      }
       el.line.visible=true;
       astPos.copy(posAt(el,simJd,AU)).sub(earthHelio);   // Earth-relative position
       dotPos[el.idx*3]=astPos.x;dotPos[el.idx*3+1]=astPos.y;dotPos[el.idx*3+2]=astPos.z;
-      const sel=(el===selected);
       const base=el.haz?HAZ_TINT:WHITE, tc=sel?SEL_COL:base;
-      const b=sel?1.7:(selected?(el.dim?0.24:1.0):1.0);
+      const b=sel?1.8:1.0;
       dotCol[el.idx*3]=Math.min(1,tc.r*b);dotCol[el.idx*3+1]=Math.min(1,tc.g*b);dotCol[el.idx*3+2]=Math.min(1,tc.b*b);
 
       if(advancing&&(el.lastSampJd===null||Math.abs(simJd-el.lastSampJd)>=TRAIL_MIN_STEP)){
@@ -532,7 +536,7 @@
       const n=el.samp.length/3;
       if(n>=2){
         const pa=el.line.geometry.attributes.position.array, ca=el.line.geometry.attributes.color.array;
-        const peak=sel?1.0:(selected?(el.dim?0.16:0.62):0.7);
+        const peak=sel?1.0:0.7;
         for(let i=0;i<n;i++){
           pa[i*3]=el.samp[i*3];pa[i*3+1]=el.samp[i*3+1];pa[i*3+2]=el.samp[i*3+2];
           const f=i/(n-1), a=f*f*peak;                 // newest = brightest, fades to 0
