@@ -145,6 +145,7 @@
   </div>
 
   <div id="viewBtns">
+    <button class="vbtn on" id="btnScale">Planets</button>
     <button class="vbtn" id="btnTop">Top-down</button>
     <button class="vbtn" id="btnReset">Reset</button>
   </div>
@@ -309,6 +310,9 @@
     const label=labelSprite(p.name,'rgba(255,255,255,0.45)',0.6);scene.add(label);
     return {el:p.el,orbit,mesh,label};
   });
+  const scaleObjs=[sunMarker,sunGlow,sunLabel,earthOrbit,
+    ...planetVis.flatMap(p=>[p.orbit,p.mesh,p.label])];
+  let showScale=true;
 
   // ── ASTEROIDS: dots + time-fading white comet trails ────────────────────────
   const HAZ_TINT=new THREE.Color(0xffb3a8), WHITE=new THREE.Color(0xdfe7f2), SEL_COL=new THREE.Color(0x9fe6ff);
@@ -382,6 +386,8 @@
     camera.lookAt(camTarget);
   }
   const selTick=$('selTick');
+  $('btnScale').onclick=function(){showScale=!showScale;this.classList.toggle('on',showScale);
+    scaleObjs.forEach(o=>o.visible=showScale);};
   $('btnTop').onclick=()=>{phi=0.06;theta=0;};
   $('btnReset').onclick=()=>{phi=0.12;theta=0;zoomMul=1;deselect();};
 
@@ -547,13 +553,15 @@
 
     // scale context: shift the heliocentric solar system by −Earth so it sits
     // correctly around the fixed Earth at the origin.
-    _sun.copy(earthHelio).multiplyScalar(-1);
-    sunMarker.position.copy(_sun);sunGlow.position.copy(_sun);sunLabel.position.set(_sun.x,_sun.y+0.16,_sun.z);
-    earthOrbit.position.copy(_sun);
-    for(const p of planetVis){
-      p.orbit.position.copy(_sun);
-      _p.copy(posAt(p.el,simJd,AU)).sub(earthHelio);
-      p.mesh.position.copy(_p);p.label.position.set(_p.x,_p.y+0.12,_p.z);
+    if(showScale){
+      _sun.copy(earthHelio).multiplyScalar(-1);
+      sunMarker.position.copy(_sun);sunGlow.position.copy(_sun);sunLabel.position.set(_sun.x,_sun.y+0.16,_sun.z);
+      earthOrbit.position.copy(_sun);
+      for(const p of planetVis){
+        p.orbit.position.copy(_sun);
+        _p.copy(posAt(p.el,simJd,AU)).sub(earthHelio);
+        p.mesh.position.copy(_p);p.label.position.set(_p.x,_p.y+0.12,_p.z);
+      }
     }
 
     for(const el of AST){
