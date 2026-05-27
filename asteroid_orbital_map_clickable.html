@@ -220,6 +220,12 @@
 
   // Earth — mean elements at J2000
   const EARTH=prep({a:1.00000,e:0.01671,inc:0.00005,node:0.0,peri:102.9377,M0:357.529,n:0.985608,epoch:2451545.0});
+  const J2000=2451545.0;
+  const PLANETS=[
+    {name:'MERCURY',col:0x9a8f80,el:prep({a:0.38710,e:0.20563,inc:7.005,node:48.331,peri:29.124,M0:174.795,n:4.092339,epoch:J2000})},
+    {name:'VENUS',  col:0xc9b58e,el:prep({a:0.72333,e:0.00677,inc:3.395,node:76.680,peri:54.884,M0:50.115,n:1.602136,epoch:J2000})},
+    {name:'MARS',   col:0xc66b4a,el:prep({a:1.52371,e:0.09339,inc:1.850,node:49.558,peri:286.502,M0:19.373,n:0.524039,epoch:J2000})},
+  ];
 
   // ── SELECT THE NEAR-EARTH SET ───────────────────────────────────────────────
   // Asteroids with a 2025-2125 Earth approach, closest first; cap for a clean field.
@@ -278,6 +284,31 @@
   const earthGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:softTex,color:0x8fd8ff,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,depthWrite:false}));
   earthGlow.scale.setScalar(0.62);scene.add(earthGlow);
   const earthLabel=labelSprite('EARTH','#cfeeff',0.9);scene.add(earthLabel);
+
+  // ── SCALE CONTEXT: subtle Sun anchor + inner-planet orbit rings ─────────────
+  // Built in heliocentric coords; each frame the whole group is shifted by
+  // −Earth so it swings around the fixed Earth, giving a sense of scale.
+  function planetOrbit(el,color,op){
+    const seg=180,arr=new Float32Array((seg+1)*3);
+    for(let i=0;i<=seg;i++){const E=2*Math.PI*i/seg,xo=el.a*Math.cos(E)-el.ae,yo=el.b*Math.sin(E);
+      arr[i*3]=(el.m00*xo+el.m01*yo)*AU;arr[i*3+1]=(el.m10*xo+el.m11*yo)*AU;arr[i*3+2]=(el.m20*xo+el.m21*yo)*AU;}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(arr,3));
+    const line=new THREE.LineLoop(g,new THREE.LineBasicMaterial({color,transparent:true,opacity:op}));
+    line.frustumCulled=false;scene.add(line);return line;
+  }
+  const sunMarker=new THREE.Mesh(new THREE.SphereGeometry(0.06,18,18),new THREE.MeshBasicMaterial({color:0xe8c45a}));
+  scene.add(sunMarker);
+  const sunGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:softTex,color:0xffcf6b,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false}));
+  sunGlow.scale.setScalar(0.42);scene.add(sunGlow);
+  const sunLabel=labelSprite('SUN','rgba(255,207,107,0.65)',0.62);scene.add(sunLabel);
+  const earthOrbit=planetOrbit(EARTH,0x6fd3ff,0.15);
+  const planetVis=PLANETS.map(p=>{
+    const orbit=planetOrbit(p.el,p.col,0.1);
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16),new THREE.MeshBasicMaterial({color:p.col}));
+    scene.add(mesh);
+    const label=labelSprite(p.name,'rgba(255,255,255,0.45)',0.6);scene.add(label);
+    return {el:p.el,orbit,mesh,label};
+  });
 
   // ── ASTEROIDS: dots + time-fading white comet trails ────────────────────────
   const HAZ_TINT=new THREE.Color(0xffb3a8), WHITE=new THREE.Color(0xdfe7f2), SEL_COL=new THREE.Color(0x9fe6ff);
@@ -340,7 +371,7 @@
 
   // ── CAMERA (top-down default, follows Earth or selected) ────────────────────
   let theta=0.0, phi=0.12, zoomMul=1;            // phi small = top-down
-  const DEFAULT_R=7.5;
+  const DEFAULT_R=9;
   const camTarget=new THREE.Vector3();
   let actR=DEFAULT_R, desR=DEFAULT_R;
   function updateCamera(){
@@ -496,7 +527,7 @@
   // Everything is drawn in an Earth-centred frame: Earth is pinned at the origin
   // and never moves; each asteroid is positioned at (heliocentric − Earth), so
   // its trail traces its trajectory *relative to Earth*.
-  const earthHelio=new THREE.Vector3(), astPos=new THREE.Vector3();
+  const earthHelio=new THREE.Vector3(), astPos=new THREE.Vector3(), _sun=new THREE.Vector3(), _p=new THREE.Vector3();
   earthMesh.position.set(0,0,0); earthGlow.position.set(0,0,0); earthLabel.position.set(0,0.22,0);
   let last=performance.now();
   applyFilter();
@@ -513,6 +544,17 @@
     earthHelio.copy(posAt(EARTH,simJd,AU));   // frame origin (Earth's true position)
     earthMesh.rotation.y+=0.01;
     const advancing=playing&&!scrubbing;
+
+    // scale context: shift the heliocentric solar system by −Earth so it sits
+    // correctly around the fixed Earth at the origin.
+    _sun.copy(earthHelio).multiplyScalar(-1);
+    sunMarker.position.copy(_sun);sunGlow.position.copy(_sun);sunLabel.position.set(_sun.x,_sun.y+0.16,_sun.z);
+    earthOrbit.position.copy(_sun);
+    for(const p of planetVis){
+      p.orbit.position.copy(_sun);
+      _p.copy(posAt(p.el,simJd,AU)).sub(earthHelio);
+      p.mesh.position.copy(_p);p.label.position.set(_p.x,_p.y+0.12,_p.z);
+    }
 
     for(const el of AST){
       const sel=(el===selected);
