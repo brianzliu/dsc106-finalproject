@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Near-Earth Asteroids: Close Approaches</title>
+    <title>NEA Orbital Geometry: Eccentricity vs. Inclination</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         body {
@@ -20,43 +20,59 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: relative;
         }
-        /* Tooltip CSS for the Interaction */
+        /* Interactive Tooltip Design */
         .tooltip {
             position: absolute;
             text-align: left;
-            padding: 10px;
-            font-size: 12px;
-            background: rgba(0, 0, 0, 0.85);
+            padding: 12px;
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.9);
             color: #fff;
-            border: 1px solid #444;
-            border-radius: 4px;
+            border: 1px solid #555;
+            border-radius: 6px;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 10;
         }
         .axis-label {
-            fill: #aaa;
+            fill: #ccc;
             font-size: 14px;
+            font-weight: bold;
         }
         .tick text {
             fill: #aaa;
         }
         .tick line, .domain {
-            stroke: #555;
+            stroke: #444;
         }
-        /* Prototype Writeup Styles */
+        .grid line {
+            stroke: #333;
+            stroke-dasharray: 4;
+        }
         .writeup {
             max-width: 800px;
             margin-top: 2rem;
             line-height: 1.6;
         }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Projected Earth Close-Approaches (2026 - 2125)</h2>
-    <div class="chart-container" id="scatterplot"></div>
+    <h2>Near-Earth Asteroids: Orbital Eccentricity vs. Inclination</h2>
+    <div class="chart-container" id="bubbleplot">
+        <div id="loading" class="loading">Parsing NASA Asteroid Records...</div>
+    </div>
 
     <div class="writeup">
         <h3>Initial Prototype Writeup</h3>
@@ -68,120 +84,145 @@
     </div>
 
     <script>
-        // 1. SETUP DIMENSIONS & SVG
-        const width = 800;
-        const height = 500;
+        const width = 850;
+        const height = 550;
         const margin = { top: 40, right: 40, bottom: 60, left: 60 };
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
 
-        const svg = d3.select("#scatterplot")
+        const svg = d3.select("#bubbleplot")
             .append("svg")
             .attr("width", width)
             .attr("height", height)
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        // Tooltip setup (The required interaction)
-        const tooltip = d3.select("body").append("div")
-            .attr("class", "tooltip");
+        const tooltip = d3.select("body").append("div").attr("class", "tooltip");
 
-        // 2. SAMPLE DATA
-        // For the final project, replace this array with: 
-        // d3.csv("nasa_asteroids.csv").then(data => { ... chart code ... });
-        const data = [
-            { name: "Apophis", year: 2029, miss_distance_ld: 0.1, diameter_m: 340, is_hazardous: true },
-            { name: "2023 DZ2", year: 2026, miss_distance_ld: 0.45, diameter_m: 50, is_hazardous: false },
-            { name: "Bennu", year: 2135, miss_distance_ld: 0.78, diameter_m: 490, is_hazardous: true },
-            { name: "4179 Toutatis", year: 2069, miss_distance_ld: 7.7, diameter_m: 5400, is_hazardous: true },
-            { name: "2012 TC4", year: 2050, miss_distance_ld: 0.13, diameter_m: 15, is_hazardous: false },
-            { name: "1950 DA", year: 2880, miss_distance_ld: 0.05, diameter_m: 1100, is_hazardous: true },
-            { name: "Florence", year: 2057, miss_distance_ld: 18.4, diameter_m: 4900, is_hazardous: true },
-            { name: "2020 CD3", year: 2030, miss_distance_ld: 2.1, diameter_m: 3, is_hazardous: false }
-        ].filter(d => d.year >= 2026 && d.year <= 2125); // Filter to proposed timeline
+        // Load dataset from the data directory
+        d3.csv("data/asteroids_data.csv").then(rawData => {
+            d3.select("#loading").remove();
 
-        // 3. SCALES
-        // X-Axis: Year (Linear)
-        const xScale = d3.scaleLinear()
-            .domain([2026, 2125])
-            .range([0, innerWidth]);
+            // 1. Exact Column Mapping & Parsing
+            let data = rawData.map(d => {
+                return {
+                    name: d.short_name || d.name,
+                    eccentricity: +d.eccentricity,
+                    inclination: +d.inclination,
+                    diameter_max_m: +d.diameter_max_m || 10,
+                    // Convert 1/0 string to true/false boolean
+                    is_hazardous: +d.potentially_hazardous === 1,
+                    orbit_class: d.orbit_class_type
+                };
+            }).filter(d => !isNaN(d.eccentricity) && !isNaN(d.inclination));
 
-        // Y-Axis: Miss Distance (Log Scale as proposed)
-        const yScale = d3.scaleLog()
-            .domain([0.01, d3.max(data, d => d.miss_distance_ld) || 100]) // Prevent log(0)
-            .range([innerHeight, 0]);
+            // Optional: Downsample massive datasets to keep the prototype fast
+            if (data.length > 2500) {
+                data = d3.shuffle(data).slice(0, 2500);
+            }
 
-        // Size Scale: Asteroid Diameter (Sqrt scale is best for mapping area)
-        const sizeScale = d3.scaleSqrt()
-            .domain([0, d3.max(data, d => d.diameter_m)])
-            .range([3, 20]);
+            // 2. Scales
+            const xScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.eccentricity) || 1])
+                .range([0, innerWidth])
+                .nice();
 
-        // Color Scale: Hazard Status
-        const colorScale = d3.scaleOrdinal()
-            .domain([true, false])
-            .range(["#ff7f50", "#00ffff"]); // Coral for hazard, Cyan for safe
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.inclination) || 90])
+                .range([innerHeight, 0])
+                .nice();
 
-        // 4. AXES
-        const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d")); // Format as plain year
-        const yAxis = d3.axisLeft(yScale).ticks(5, "~s"); // Format log ticks cleanly
+            // Using square root scale so bubble area accurately reflects physical size
+            const sizeScale = d3.scaleSqrt()
+                .domain([0, d3.max(data, d => d.diameter_max_m) || 1000])
+                .range([3, 22]);
 
-        // Add X Axis
-        svg.append("g")
-            .attr("transform", `translate(0,${innerHeight})`)
-            .call(xAxis);
-        svg.append("text")
-            .attr("class", "axis-label")
-            .attr("x", innerWidth / 2)
-            .attr("y", innerHeight + 40)
-            .style("text-anchor", "middle")
-            .text("Year of Close Approach");
+            // Red for hazardous, Blue for non-hazardous as per proposal specifications
+            const colorScale = d3.scaleOrdinal()
+                .domain([true, false])
+                .range(["#ff3333", "#3388ff"]); 
 
-        // Add Y Axis
-        svg.append("g")
-            .call(yAxis);
-        svg.append("text")
-            .attr("class", "axis-label")
-            .attr("transform", "rotate(-90)")
-            .attr("x", -innerHeight / 2)
-            .attr("y", -40)
-            .style("text-anchor", "middle")
-            .text("Miss Distance (Lunar Distances, Log Scale)");
+            // 3. Background Gridlines
+            svg.append("g")
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${innerHeight})`)
+                .call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(""));
+            
+            svg.append("g")
+                .attr("class", "grid")
+                .call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat(""));
 
-        // 5. DRAW CIRCLES WITH INTERACTION
-        svg.selectAll("circle")
-            .data(data)
-            .enter()
-            .append("circle")
-            .attr("cx", d => xScale(d.year))
-            .attr("cy", d => yScale(d.miss_distance_ld))
-            .attr("r", d => sizeScale(d.diameter_m))
-            .attr("fill", d => colorScale(d.is_hazardous))
-            .attr("opacity", 0.8)
-            .attr("stroke", "#222")
-            .attr("stroke-width", 1)
-            // THE REQUIRED INTERACTION (Hover Tooltip)
-            .on("mouseover", function(event, d) {
-                d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2).attr("opacity", 1);
-                tooltip.transition().duration(200).style("opacity", 1);
-                tooltip.html(`
-                    <strong>${d.name}</strong><br/>
-                    Year: ${d.year}<br/>
-                    Miss Dist: ${d.miss_distance_ld} LD<br/>
-                    Diameter: ${d.diameter_m}m<br/>
-                    Hazardous: ${d.is_hazardous ? "Yes" : "No"}
-                `)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px");
-            })
-            .on("mousemove", function(event) {
-                tooltip.style("left", (event.pageX + 10) + "px")
-                       .style("top", (event.pageY - 28) + "px");
-            })
-            .on("mouseout", function(d) {
-                d3.select(this).attr("stroke", "#222").attr("stroke-width", 1).attr("opacity", 0.8);
-                tooltip.transition().duration(500).style("opacity", 0);
-            });
+            // 4. Render Axes
+            svg.append("g")
+                .attr("transform", `translate(0,${innerHeight})`)
+                .call(d3.axisBottom(xScale));
+            
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("x", innerWidth / 2)
+                .attr("y", innerHeight + 45)
+                .style("text-anchor", "middle")
+                .text("Orbital Eccentricity (e)");
 
+            svg.append("g").call(d3.axisLeft(yScale));
+            
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -innerHeight / 2)
+                .attr("y", -40)
+                .style("text-anchor", "middle")
+                .text("Orbital Inclination (degrees)");
+
+            // 5. Plot Interactive Bubbles
+            svg.selectAll("circle")
+                .data(data)
+                .enter()
+                .append("circle")
+                .attr("cx", d => xScale(d.eccentricity))
+                .attr("cy", d => yScale(d.inclination))
+                .attr("r", d => sizeScale(d.diameter_max_m))
+                .attr("fill", d => colorScale(d.is_hazardous))
+                .attr("opacity", 0.65)
+                .attr("stroke", "#111")
+                .attr("stroke-width", 0.7)
+                // Interaction Callbacks
+                .on("mouseover", function(event, d) {
+                    d3.select(this)
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 2)
+                        .attr("opacity", 1)
+                        .raise(); // Pulls active target to foreground visual layer
+
+                    tooltip.transition().duration(150).style("opacity", 1);
+                    tooltip.html(`
+                        <strong style="font-size: 1.1em; color: ${colorScale(d.is_hazardous)};">${d.name}</strong><br/>
+                        <span style="color: #aaa; font-size: 0.9em;">Class: ${d.orbit_class || 'Unknown'}</span><br/><br/>
+                        <strong>Eccentricity:</strong> ${d.eccentricity.toFixed(3)}<br/>
+                        <strong>Inclination:</strong> ${d.inclination.toFixed(2)}°<br/>
+                        <strong>Max Diameter:</strong> ${d.diameter_max_m.toFixed(0)} m<br/>
+                        <strong>Potentially Hazardous:</strong> ${d.is_hazardous ? "<span style='color:#ff3333; font-weight:bold;'>YES</span>" : "No"}
+                    `)
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY - 35) + "px");
+                })
+                .on("mousemove", function(event) {
+                    tooltip.style("left", (event.pageX + 15) + "px")
+                           .style("top", (event.pageY - 35) + "px");
+                })
+                .on("mouseout", function(d) {
+                    d3.select(this)
+                        .attr("stroke", "#111")
+                        .attr("stroke-width", 0.7)
+                        .attr("opacity", 0.65);
+                    tooltip.transition().duration(400).style("opacity", 0);
+                });
+
+        }).catch(error => {
+            console.error("Error fetching or parsing neo.csv:", error);
+            d3.select("#loading")
+              .text("Data loading failure. Please run a local web server (CORS protection active).");
+        });
     </script>
 </body>
 </html>
