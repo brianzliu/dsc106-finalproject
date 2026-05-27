@@ -145,7 +145,7 @@
   </div>
 
   <div id="viewBtns">
-    <button class="vbtn on" id="btnScale">Planets</button>
+    <button class="vbtn" id="btnScale">Planets</button>
     <button class="vbtn" id="btnTop">Top-down</button>
     <button class="vbtn" id="btnReset">Reset</button>
   </div>
@@ -312,7 +312,8 @@
   });
   const scaleObjs=[sunMarker,sunGlow,sunLabel,earthOrbit,
     ...planetVis.flatMap(p=>[p.orbit,p.mesh,p.label])];
-  let showScale=true;
+  let showScale=false;                       // planets hidden by default
+  scaleObjs.forEach(o=>o.visible=false);
 
   // ── ASTEROIDS: dots + time-fading white comet trails ────────────────────────
   const HAZ_TINT=new THREE.Color(0xffb3a8), WHITE=new THREE.Color(0xdfe7f2), SEL_COL=new THREE.Color(0x9fe6ff);
@@ -477,10 +478,13 @@
     for(const h of hits){const el=AST[h.index];if(el&&!el.hidden)return el;}
     return null;
   }
-  canvas.addEventListener('mousedown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;moved=false;});
+  let downOnCanvas=false;
+  canvas.addEventListener('mousedown',e=>{dragging=true;downOnCanvas=true;lastX=e.clientX;lastY=e.clientY;moved=false;});
   addEventListener('mouseup',e=>{
-    if(!moved){const el=pickDot(e.clientX,e.clientY); if(el)selectAst(el,true); else deselect();}
-    dragging=false;
+    // only treat as a scene click if the press started on the canvas — clicking
+    // UI (play/speed/etc.) must not deselect the followed asteroid.
+    if(downOnCanvas&&!moved){const el=pickDot(e.clientX,e.clientY); if(el)selectAst(el,true); else deselect();}
+    downOnCanvas=false;dragging=false;
   });
   addEventListener('mousemove',e=>{
     if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;
