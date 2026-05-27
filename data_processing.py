@@ -31,6 +31,12 @@ APPROACHES_OUT = os.path.join(HERE, "data", "close_approaches.json")
 # exported JSON small.
 SEGMENTS = 96
 
+# The orbit ellipse can be recomputed in the browser from the Keplerian
+# elements (the scene does exactly this, and also needs the time elements
+# below to propagate position over time). Embedding ~97 points per asteroid
+# inflates the JSON ~10x, so leave it off by default and ship the elements.
+INCLUDE_ORBIT = False
+
 # Map NASA's three-letter orbit-class codes to the names the front-end uses.
 ORBIT_CLASS = {
     "APO": "Apollo",
@@ -167,7 +173,7 @@ def main():
             v = row.get(col)
             return None if pd.isna(v) else float(v)
 
-        asteroids.append({
+        record = {
             "name": str(row["name"]),
             "short_name": name,
             "magnitude": num("magnitude"),
@@ -185,10 +191,17 @@ def main():
             "min_orbit_intersection": num("min_orbit_intersection"),
             "orbit_class_type": cls,
             "discovery_year": None if pd.isna(row["discovery_year"]) else int(row["discovery_year"]),
+            # Time elements for propagating position to any date (Kepler's eqn):
+            #   M(t) = mean_anomaly + mean_motion * (JD(t) - epoch)
+            "epoch": num("epoch"),                 # Julian Date the elements are given at
+            "mean_anomaly": num("mean_anomaly"),   # degrees at epoch
+            "mean_motion": num("mean_motion"),     # degrees / day
+        }
+        if INCLUDE_ORBIT:
             # Precomputed orbit ellipse in heliocentric AU (multiply by the
             # scene's AU display scale to render).
-            "orbit": keplerian_to_points(a, e, inc, lon_node, arg_peri),
-        })
+            record["orbit"] = keplerian_to_points(a, e, inc, lon_node, arg_peri)
+        asteroids.append(record)
 
         close_approaches.extend(
             parse_close_approaches(
@@ -206,10 +219,11 @@ def main():
     asteroids_payload = {
         "meta": {
             "source": source,
-            "units": "heliocentric AU; y is the out-of-orbital-plane axis",
-            "orbit_segments": SEGMENTS,
+            "frame": "heliocentric ecliptic J2000 Keplerian elements",
+            "angles": "degrees; epoch is a Julian Date; mean_motion in deg/day",
             "n_asteroids": len(asteroids),
             "n_hazardous": n_hazardous,
+            "includes_orbit_points": INCLUDE_ORBIT,
         },
         "asteroids": asteroids,
     }

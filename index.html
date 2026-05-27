@@ -3,87 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEA Orbital Geometry: Eccentricity vs. Inclination</title>
+    <title>Orbital Theater — Near-Earth Asteroids</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem;
+        :root{
+            --bg:#04060f; --panel:#0a0d1a; --line:rgba(255,255,255,0.1);
+            --ink:#eef1f8; --dim:rgba(238,241,248,0.55); --faint:rgba(238,241,248,0.32);
+            --amber:#ffc861; --cyan:#6fd3ff; --coral:#ff6b6b;
         }
-        .chart-container {
-            background: #2a2a2a;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            position: relative;
+        *{box-sizing:border-box;}
+        body{
+            font-family:"Space Mono",monospace;
+            background:var(--bg);
+            color:var(--ink);
+            margin:0;
+            -webkit-font-smoothing:antialiased;
         }
-        /* Interactive Tooltip Design */
-        .tooltip {
-            position: absolute;
-            text-align: left;
-            padding: 12px;
-            font-size: 13px;
-            background: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 6px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-            z-index: 10;
+        /* full-bleed simulation hero */
+        .hero{position:relative;width:100%;height:92vh;min-height:560px;border-bottom:1px solid var(--line);}
+        .hero iframe{width:100%;height:100%;border:none;display:block;}
+
+        .section{max-width:920px;margin:0 auto;padding:0 24px;}
+        .lede{text-align:center;padding:64px 24px 30px;}
+        .lede .eyebrow{font-size:11px;letter-spacing:0.34em;text-transform:uppercase;color:var(--amber);}
+        .lede h2{font-family:"Instrument Serif",serif;font-weight:400;font-size:42px;line-height:1.1;margin:14px 0 0;letter-spacing:0.01em;}
+        .lede h2 em{font-style:italic;color:var(--cyan);}
+        .lede p{color:var(--dim);max-width:620px;margin:18px auto 0;font-size:13.5px;line-height:1.8;}
+
+        .chart-wrap{display:flex;flex-direction:column;align-items:center;padding-bottom:40px;}
+        .chart-head{text-align:center;margin:30px 0 8px;}
+        .chart-head .t{font-family:"Instrument Serif",serif;font-size:27px;}
+        .chart-head .d{color:var(--faint);font-size:12px;letter-spacing:0.04em;margin-top:6px;}
+        .chart-container{
+            background:var(--panel);
+            padding:22px;border-radius:16px;border:1px solid var(--line);
+            box-shadow:0 18px 50px rgba(0,0,0,0.5);position:relative;margin-top:18px;
         }
-        .axis-label {
-            fill: #ccc;
-            font-size: 14px;
-            font-weight: bold;
+        .tooltip{
+            position:absolute;text-align:left;padding:12px;font-size:12px;
+            background:rgba(7,9,19,0.96);color:#fff;border:1px solid var(--line);
+            border-radius:8px;pointer-events:none;opacity:0;transition:opacity 0.2s;z-index:10;
+            font-family:"Space Mono",monospace;
         }
-        .tick text {
-            fill: #aaa;
-        }
-        .tick line, .domain {
-            stroke: #444;
-        }
-        .grid line {
-            stroke: #333;
-            stroke-dasharray: 4;
-        }
-        .writeup {
-            max-width: 800px;
-            margin-top: 2rem;
-            line-height: 1.6;
-        }
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 1.2rem;
-            color: #aaa;
-        }
+        .axis-label{fill:var(--dim);font-size:13px;letter-spacing:0.04em;}
+        .tick text{fill:var(--faint);font-family:"Space Mono",monospace;font-size:11px;}
+        .tick line,.domain{stroke:rgba(255,255,255,0.18);}
+        .grid line{stroke:rgba(255,255,255,0.05);}
+        .loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--faint);letter-spacing:0.08em;}
+
+        .writeup{max-width:760px;margin:20px auto 0;padding:0 24px 90px;line-height:1.85;}
+        .writeup h3{font-family:"Instrument Serif",serif;font-weight:400;font-size:28px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:8px;}
+        .writeup p{color:var(--dim);font-size:13.5px;}
+        .writeup strong{color:var(--ink);}
+        .divider{width:60px;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan));margin:36px auto;border-radius:2px;}
+        footer{text-align:center;color:var(--faint);font-size:11px;letter-spacing:0.1em;padding:30px;border-top:1px solid var(--line);}
     </style>
 </head>
 <body>
-    <div style="width:100vw;margin-left:calc(-50vw + 50%);margin-bottom:2rem;">
-        <iframe src="asteroid_orbital_map_clickable.html" style="width:100%;height:600px;border:none;display:block;"></iframe>
+
+    <div class="hero">
+        <iframe src="asteroid_orbital_map_clickable.html" title="Orbital Theater — interactive close-approach simulation"></iframe>
     </div>
-    <h2>Near-Earth Asteroids: Orbital Eccentricity vs. Inclination</h2>
-    <div class="chart-container" id="bubbleplot">
-        <div id="loading" class="loading">Parsing NASA Asteroid Records...</div>
+
+    <div class="lede">
+        <div class="eyebrow">The Pickle Farmers · DSC 106</div>
+        <h2>Charting a century of <em>near misses</em></h2>
+        <p>The simulation above propagates 2,000 near-Earth objects from their real Keplerian elements. Scrub through time, change the rate, and watch the clock hold each moment an asteroid sweeps closest to Earth — then explore how the whole population is distributed below.</p>
     </div>
+
+    <div class="chart-wrap">
+        <div class="chart-head">
+            <div class="t">Orbital Eccentricity vs. Inclination</div>
+            <div class="d">Every near-Earth asteroid · bubble size ∝ diameter · red = potentially hazardous</div>
+        </div>
+        <div class="chart-container" id="bubbleplot">
+            <div id="loading" class="loading">Parsing NASA asteroid records…</div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
 
     <div class="writeup">
         <h3>Initial Prototype Writeup</h3>
         <p><strong>1. What have you done so far?</strong></p>
-        <p>Our team, The Pickle Farmers, has finalized our dataset selection, utilizing the NASA Near-Earth Asteroids Dataset to explore orbital mechanics and impact risks. We have established our GitHub repository, deployed our initial GitHub Pages site, and laid out the structural HTML and CSS foundation for our explorable explanation. During the proposal phase, we mapped out the five core visualizations that will anchor our narrative, ranging from a global top-down solar system rendering to a detailed timeline of projected Earth close-approaches. Currently, we are initializing the basic Three.js scene for the 3D space rendering and configuring the D3.js framework to handle our 2D data overlays and tooltips.</p>
-        
+        <p>Our team, The Pickle Farmers, has finalized our dataset selection, utilizing the NASA Near-Earth Asteroids Dataset to explore orbital mechanics and impact risks. We have established our GitHub repository, deployed our initial GitHub Pages site, and laid out the structural HTML and CSS foundation for our explorable explanation. We built a data pipeline that cleans the 2,000-object dataset, derives each asteroid's orbital ellipse and time-propagation elements, and flattens roughly 42,000 Earth close-approach events into a form our visualizations can consume. On top of that data we have a working Three.js "Orbital Theater" that propagates every asteroid through time with Kepler's equation, lets the user play, scrub, and fast-forward the clock, and automatically holds at each asteroid's closest approach to Earth, alongside a D3 scatter of the population's orbital geometry.</p>
+
         <p><strong>2. What will be the most challenging part of your project to design and why?</strong></p>
-        <p>The most challenging aspect of our project will probably be seamlessly integrating the 3D Three.js environment with the 2D D3.js interactive scrollytelling elements. Rendering hundreds of orbital trajectories simultaneously poses a significant performance risk, so we will need to carefully optimize our data handling to prevent browser lag. Additionally, choreographing the camera transitions that moves fluidly from a macro view of the near-Earth asteroid population down to an isolated orbit will require complex state management and spatial mathematics. We anticipate that keeping the user oriented during these dynamic zooms, while simultaneously updating the informative tooltips and annotations, will require heavy iteration on the user experience design.</p>
+        <p>The most challenging aspect of our project will probably be seamlessly integrating the 3D Three.js environment with the 2D D3.js interactive scrollytelling elements. Rendering thousands of orbital trajectories and propagating them every frame poses a real performance risk, so we are carefully balancing detailed rocky meshes for the close approachers against a lightweight animated point cloud for the rest of the population. Additionally, choreographing the camera transitions that move fluidly from a macro view of the near-Earth asteroid population down to an isolated close approach requires complex state management and spatial mathematics. We anticipate that keeping the user oriented during these dynamic zooms, while simultaneously synchronizing the simulation clock, the timeline scrubber, and the informative close-approach annotations, will require heavy iteration on the user experience design.</p>
     </div>
+
+    <footer>NASA Near-Earth Object data · JPL Small-Body Database · Built with Three.js + D3</footer>
 
     <script>
         const width = 850;
@@ -142,14 +154,14 @@
             // Red for hazardous, Blue for non-hazardous as per proposal specifications
             const colorScale = d3.scaleOrdinal()
                 .domain([true, false])
-                .range(["#ff3333", "#3388ff"]); 
+                .range(["#ff6b6b", "#6fd3ff"]);
 
             // 3. Background Gridlines
             svg.append("g")
                 .attr("class", "grid")
                 .attr("transform", `translate(0,${innerHeight})`)
                 .call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(""));
-            
+
             svg.append("g")
                 .attr("class", "grid")
                 .call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat(""));
@@ -158,7 +170,7 @@
             svg.append("g")
                 .attr("transform", `translate(0,${innerHeight})`)
                 .call(d3.axisBottom(xScale));
-            
+
             svg.append("text")
                 .attr("class", "axis-label")
                 .attr("x", innerWidth / 2)
@@ -167,7 +179,7 @@
                 .text("Orbital Eccentricity (e)");
 
             svg.append("g").call(d3.axisLeft(yScale));
-            
+
             svg.append("text")
                 .attr("class", "axis-label")
                 .attr("transform", "rotate(-90)")
@@ -185,8 +197,8 @@
                 .attr("cy", d => yScale(d.inclination))
                 .attr("r", d => sizeScale(d.diameter_max_m))
                 .attr("fill", d => colorScale(d.is_hazardous))
-                .attr("opacity", 0.65)
-                .attr("stroke", "#111")
+                .attr("opacity", 0.6)
+                .attr("stroke", "#04060f")
                 .attr("stroke-width", 0.7)
                 // Interaction Callbacks
                 .on("mouseover", function(event, d) {
@@ -194,7 +206,7 @@
                         .attr("stroke", "#fff")
                         .attr("stroke-width", 2)
                         .attr("opacity", 1)
-                        .raise(); // Pulls active target to foreground visual layer
+                        .raise();
 
                     tooltip.transition().duration(150).style("opacity", 1);
                     tooltip.html(`
@@ -203,7 +215,7 @@
                         <strong>Eccentricity:</strong> ${d.eccentricity.toFixed(3)}<br/>
                         <strong>Inclination:</strong> ${d.inclination.toFixed(2)}°<br/>
                         <strong>Max Diameter:</strong> ${d.diameter_max_m.toFixed(0)} m<br/>
-                        <strong>Potentially Hazardous:</strong> ${d.is_hazardous ? "<span style='color:#ff3333; font-weight:bold;'>YES</span>" : "No"}
+                        <strong>Potentially Hazardous:</strong> ${d.is_hazardous ? "<span style='color:#ff6b6b; font-weight:bold;'>YES</span>" : "No"}
                     `)
                     .style("left", (event.pageX + 15) + "px")
                     .style("top", (event.pageY - 35) + "px");
@@ -214,16 +226,16 @@
                 })
                 .on("mouseout", function(d) {
                     d3.select(this)
-                        .attr("stroke", "#111")
+                        .attr("stroke", "#04060f")
                         .attr("stroke-width", 0.7)
-                        .attr("opacity", 0.65);
+                        .attr("opacity", 0.6);
                     tooltip.transition().duration(400).style("opacity", 0);
                 });
 
         }).catch(error => {
-            console.error("Error fetching or parsing neo.csv:", error);
+            console.error("Error fetching or parsing data:", error);
             d3.select("#loading")
-              .text("Data loading failure. Please run a local web server (CORS protection active).");
+              .text("Data loading failure — please run a local web server (CORS).");
         });
     </script>
 </body>
