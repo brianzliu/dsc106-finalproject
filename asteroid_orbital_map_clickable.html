@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Near-Earth Asteroids — Close Approach Viewer</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#04050d;font-family:monospace;overflow:hidden;}
+  #loading{
+    position:fixed;inset:0;background:#04050d;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;z-index:999;gap:14px;
+    color:rgba(255,255,255,0.5);font-family:monospace;font-size:13px;
+  }
+  #loadBar{width:240px;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;}
+  #loadFill{height:100%;width:0%;background:#4dabf7;border-radius:2px;transition:width 0.3s ease;}
+  #loadMsg{font-size:11px;color:rgba(255,255,255,0.35);}
+  #app{width:100vw;height:100vh;position:relative;display:none;}
+
+  button{
+    background:rgba(4,5,13,0.75);color:rgba(255,255,255,0.6);
+    border:0.5px solid rgba(255,255,255,0.15);border-radius:6px;
+    padding:5px 10px;cursor:pointer;font-family:monospace;font-size:11px;
+  }
+  button:hover{border-color:rgba(255,255,255,0.35);color:rgba(255,255,255,0.9);}
+
+  /* filter bar */
+  #filterBar{
+    position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+    background:rgba(4,5,13,0.88);border:0.5px solid rgba(255,255,255,0.12);
+    border-radius:10px;padding:10px 18px;display:flex;align-items:center;gap:16px;
+    font-family:monospace;font-size:11px;color:rgba(255,255,255,0.45);
+    white-space:nowrap;
+  }
+  #filterBar label{display:flex;align-items:center;gap:8px;}
+  #ldSlider{
+    -webkit-appearance:none;appearance:none;
+    width:130px;height:3px;border-radius:2px;
+    background:rgba(255,255,255,0.15);outline:none;cursor:pointer;
+  }
+  #ldSlider::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:13px;height:13px;border-radius:50%;
+    background:#4dabf7;cursor:pointer;
+  }
+  #ldVal{color:#4dabf7;font-weight:600;min-width:38px;}
+  #ldCount{color:rgba(255,255,255,0.3);font-size:10px;}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div style="font-size:15px;color:rgba(255,255,255,0.7);letter-spacing:0.05em;">NEO CLOSE APPROACH VIEWER</div>
+  <div id="loadBar"><div id="loadFill"></div></div>
+  <div id="loadMsg">Loading data…</div>
+</div>
+
+<div id="app">
+  <canvas id="c" style="display:block;width:100%;height:100vh;"></canvas>
+
+  <!-- Legend -->
+  <div style="position:absolute;top:14px;left:14px;font-family:monospace;font-size:11px;line-height:1.9;background:rgba(4,5,13,0.75);padding:8px 12px;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);">
+    <div style="display:flex;align-items:center;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:#4dabf7;display:inline-block;"></span><span style="color:rgba(255,255,255,0.65)">Apollo</span></div>
+    <div style="display:flex;align-items:center;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:#69db7c;display:inline-block;"></span><span style="color:rgba(255,255,255,0.65)">Amor</span></div>
+    <div style="display:flex;align-items:center;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:#ffd43b;display:inline-block;"></span><span style="color:rgba(255,255,255,0.65)">Aten</span></div>
+    <div style="display:flex;align-items:center;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:#cc5de8;display:inline-block;"></span><span style="color:rgba(255,255,255,0.65)">Atira</span></div>
+    <div style="display:flex;align-items:center;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:#ff6b6b;display:inline-block;"></span><span style="color:rgba(255,255,255,0.65)">Hazardous</span></div>
+  </div>
+
+  <!-- Stats strip -->
+  <div id="statsStrip" style="position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(4,5,13,0.75);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 16px;display:flex;gap:20px;font-family:monospace;font-size:10px;color:rgba(255,255,255,0.4);white-space:nowrap;"></div>
+
+  <!-- Controls -->
+  <div style="position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;">
+    <button id="btnReset">Reset view</button>
+    <button id="btnToggle">Pause rotation</button>
+    <button id="btnHazOnly">Hazardous only</button>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="tip" style="position:absolute;pointer-events:none;background:rgba(4,5,13,0.92);border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-family:monospace;font-size:11px;color:rgba(255,255,255,0.85);display:none;max-width:210px;"></div>
+
+  <!-- Filter bar -->
+  <div id="filterBar">
+    <label>
+      Max close approach distance
+      <input type="range" id="ldSlider" min="10" max="100" step="5" value="5"/>
+      <span id="ldVal">5 LD</span>
+    </label>
+    <span id="ldCount"></span>
+  </div>
+
+  <!-- Detail panel -->
+  <div id="panel" style="
+    position:absolute;bottom:0;left:0;right:0;
+    background:rgba(6,7,18,0.97);
+    border-top:0.5px solid rgba(255,255,255,0.12);
+    transform:translateY(100%);
+    transition:transform 0.38s cubic-bezier(0.22,1,0.36,1);
+    padding:18px 20px 20px;
+    font-family:monospace;
+    max-height:68vh;overflow-y:auto;
+  ">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div id="pDot" style="width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div>
+          <span id="pName" style="font-size:16px;font-weight:600;color:#fff;letter-spacing:0.02em;"></span>
+          <span id="pBadge" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;"></span>
+        </div>
+        <div id="pClass" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;margin-left:22px;"></div>
+      </div>
+      <button id="panelClose" style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;margin-top:-2px;flex-shrink:0;">✕</button>
+    </div>
+    <div id="pStats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px;"></div>
+    <div id="pOrbit" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px;"></div>
+    <div id="pApproachesSection" style="display:none;">
+      <div id="pApproachLabel" style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;"></div>
+      <div id="pApproaches" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(async function(){
+  const loadFill = document.getElementById('loadFill');
+  const loadMsg  = document.getElementById('loadMsg');
+  function setLoad(pct, msg){ loadFill.style.width=pct+'%'; if(msg) loadMsg.textContent=msg; }
+
+  setLoad(10, 'Fetching data…');
+  let ALL_ASTEROIDS_MAP, CLOSE_APPROACHES_MAP, ALL_CA;
+
+  try {
+    const [astRes, caRes] = await Promise.all([
+      fetch('data/asteroids.json'),
+      fetch('data/close_approaches.json')
+    ]);
+    setLoad(45, 'Parsing…');
+    const astData = await astRes.json();
+    const caData  = await caRes.json();
+
+    // Index all asteroids by short_name
+    ALL_ASTEROIDS_MAP = {};
+    for(const a of astData.asteroids) ALL_ASTEROIDS_MAP[a.short_name] = a;
+
+    ALL_CA = caData.close_approaches;
+
+    // Index all approaches by short_name
+    setLoad(65, 'Indexing close approaches…');
+    CLOSE_APPROACHES_MAP = {};
+    for(const ca of ALL_CA){
+      if(!CLOSE_APPROACHES_MAP[ca.name]) CLOSE_APPROACHES_MAP[ca.name] = [];
+      CLOSE_APPROACHES_MAP[ca.name].push(ca);
+    }
+
+    const n  = astData.meta.n_asteroids;
+    const nh = astData.meta.n_hazardous;
+    const nca = caData.meta.n_close_approaches_2026_2125;
+    document.getElementById('statsStrip').innerHTML =
+      `<span><b style="color:rgba(255,255,255,0.7)">${n.toLocaleString()}</b> total NEOs</span>`+
+      `<span><b style="color:#ff6b6b">${nh.toLocaleString()}</b> hazardous</span>`+
+      `<span><b style="color:#ffd43b">${nca.toLocaleString()}</b> future approaches</span>`;
+
+  } catch(err){ loadMsg.textContent='Error: '+err.message; return; }
+
+  setLoad(80, 'Building scene…');
+
+  // ── COLORS ───────────────────────────────────────────────────────────────
+  const classColor    = {Apollo:0x4dabf7,Amor:0x69db7c,Aten:0xffd43b,Atira:0xcc5de8};
+  const classColorHex = {Apollo:'#4dabf7',Amor:'#69db7c',Aten:'#ffd43b',Atira:'#cc5de8'};
+  const hazColor = 0xff6b6b;
+
+  // ── THREE SETUP ───────────────────────────────────────────────────────────
+  const canvas   = document.getElementById('c');
+  const wrap     = document.getElementById('app');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x04050d, 1);
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 200);
+
+  function resize(){
+    const W=wrap.clientWidth, H=wrap.clientHeight;
+    renderer.setSize(W,H); camera.aspect=W/H; camera.updateProjectionMatrix();
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  // Stars
+  (function(){
+    const N=1600, pos=new Float32Array(N*3);
+    for(let i=0;i<N*3;i++) pos[i]=(Math.random()-0.5)*80;
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    scene.add(new THREE.Points(geo,new THREE.PointsMaterial({color:0xffffff,size:0.055,transparent:true,opacity:0.5})));
+  })();
+
+  // Sun
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.18,32,32),new THREE.MeshBasicMaterial({color:0xffe066})));
+  [0.26,0.36].forEach((r,i)=>{
+    const g=new THREE.RingGeometry(r,r+0.015,64);
+    scene.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xffe066,transparent:true,opacity:[0.25,0.12][i],side:THREE.DoubleSide})));
+  });
+
+  // Planet orbits
+  [{a:0.387,color:0xadb5bd,r:0.04},{a:0.723,color:0xe8b87a,r:0.055},{a:1.000,color:0x4dabf7,r:0.06},{a:1.524,color:0xe03131,r:0.05}]
+  .forEach(p=>{
+    const segs=128, pts=new Float32Array((segs+1)*3);
+    for(let i=0;i<=segs;i++){const θ=2*Math.PI*i/segs;pts[i*3]=p.a*Math.cos(θ);pts[i*3+1]=0;pts[i*3+2]=p.a*Math.sin(θ);}
+    const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pts,3));
+    scene.add(new THREE.LineLoop(geo,new THREE.LineBasicMaterial({color:p.color,transparent:true,opacity:0.3})));
+    const angle=Math.random()*Math.PI*2;
+    const s=new THREE.Mesh(new THREE.SphereGeometry(p.r,16,16),new THREE.MeshBasicMaterial({color:p.color}));
+    s.position.set(p.a*Math.cos(angle),0,p.a*Math.sin(angle)); scene.add(s);
+  });
+
+  // ── ASTEROID OBJECTS (built once for ALL close-approach asteroids) ────────
+  // We build all of them upfront, then show/hide based on the LD filter.
+  // "Close approach asteroids" = asteroids that appear in close_approaches at all.
+
+  const CA_ASTEROID_NAMES = Object.keys(CLOSE_APPROACHES_MAP); // all 1460
+
+  // For each CA asteroid, find their closest future approach distance
+  const closestFuture = {}; // short_name -> min miss_distance_ld among future approaches
+  for(const name of CA_ASTEROID_NAMES){
+    const future = CLOSE_APPROACHES_MAP[name].filter(c=>c.year>=2026);
+    if(future.length>0) closestFuture[name] = Math.min(...future.map(c=>c.miss_distance_ld));
+    else closestFuture[name] = Infinity;
+  }
+
+  const asteroidMeshes = [];
+  const orbitLines     = [];
+  const haloMeshes     = [];
+  const asteroidNames  = []; // parallel array of short_name
+
+  for(const name of CA_ASTEROID_NAMES){
+    const ast = ALL_ASTEROIDS_MAP[name];
+    if(!ast || !ast.orbit) continue;
+
+    const baseColor = ast.potentially_hazardous
+      ? hazColor
+      : (classColor[ast.orbit_class_type] || 0xaaaaaa);
+
+    const orbit  = ast.orbit;
+    const floats = new Float32Array(orbit.length*3);
+    for(let j=0;j<orbit.length;j++){floats[j*3]=orbit[j][0];floats[j*3+1]=orbit[j][1];floats[j*3+2]=orbit[j][2];}
+    const orbGeo = new THREE.BufferGeometry();
+    orbGeo.setAttribute('position',new THREE.BufferAttribute(floats,3));
+    const line = new THREE.LineLoop(orbGeo,new THREE.LineBasicMaterial({
+      color:baseColor, transparent:true, opacity:ast.potentially_hazardous?0.45:0.2
+    }));
+    line.userData={baseColor,ast,name};
+    scene.add(line); orbitLines.push(line);
+
+    const dotR = ast.potentially_hazardous?0.055:0.035;
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(dotR,10,10),
+      new THREE.MeshBasicMaterial({color:baseColor})
+    );
+    sphere.position.set(orbit[0][0],orbit[0][1],orbit[0][2]);
+    sphere.userData={ast,name,baseColor,dotR,index:asteroidMeshes.length};
+    scene.add(sphere); asteroidMeshes.push(sphere);
+    asteroidNames.push(name);
+
+    let halo=null;
+    if(ast.potentially_hazardous){
+      halo=new THREE.Mesh(
+        new THREE.SphereGeometry(dotR+0.03,10,10),
+        new THREE.MeshBasicMaterial({color:0xff6b6b,transparent:true,opacity:0.18})
+      );
+      halo.position.copy(sphere.position); scene.add(halo);
+    }
+    haloMeshes.push(halo);
+  }
+
+  setLoad(100,'Ready');
+  await new Promise(r=>setTimeout(r,250));
+  document.getElementById('loading').style.display='none';
+  document.getElementById('app').style.display='block';
+
+  // ── FILTER STATE ─────────────────────────────────────────────────────────
+  let currentLd = 5;
+  let hazOnlyMode = false;
+
+  function applyFilter(){
+    let visible = 0;
+    asteroidMeshes.forEach((m,i)=>{
+      const name = asteroidNames[i];
+      const ast  = m.userData.ast;
+      const dist = closestFuture[name] ?? Infinity;
+      const show = dist <= currentLd && (!hazOnlyMode || ast.potentially_hazardous);
+      m.visible = show;
+      orbitLines[i].visible = show;
+      if(haloMeshes[i]) haloMeshes[i].visible = show;
+      if(show) visible++;
+    });
+    document.getElementById('ldCount').textContent = visible+' asteroids shown';
+    // close panel if selected asteroid is now hidden
+    if(selectedIndex>=0){
+      const name=asteroidNames[selectedIndex];
+      const dist=closestFuture[name]??Infinity;
+      if(dist>currentLd||(hazOnlyMode&&!ASTEROIDS_BY_IDX[selectedIndex].potentially_hazardous)) closePanel();
+    }
+  }
+
+  // shortcut
+  const ASTEROIDS_BY_IDX = asteroidMeshes.map(m=>m.userData.ast);
+
+  const slider = document.getElementById('ldSlider');
+  const ldVal  = document.getElementById('ldVal');
+  slider.addEventListener('input', function(){
+    currentLd = +this.value;
+    ldVal.textContent = this.value+' LD';
+    applyFilter();
+  });
+  document.getElementById('btnHazOnly').addEventListener('click',function(){
+    hazOnlyMode=!hazOnlyMode;
+    this.textContent=hazOnlyMode?'All asteroids':'Hazardous only';
+    this.style.color=hazOnlyMode?'#ff6b6b':'rgba(255,255,255,0.6)';
+    applyFilter();
+  });
+
+  let selectedIndex=-1;
+
+  applyFilter(); // initial render at 5 LD
+
+  // ── SELECTION ─────────────────────────────────────────────────────────────
+
+  function dimAll(){
+    orbitLines.forEach((l,i)=>{
+      if(!l.visible) return;
+      l.material.opacity=ASTEROIDS_BY_IDX[i].potentially_hazardous?0.07:0.04;
+    });
+    asteroidMeshes.forEach(m=>{if(!m.visible)return;m.material.color.setHex(m.userData.baseColor);m.scale.setScalar(0.6);});
+    haloMeshes.forEach(h=>{if(h&&h.visible)h.material.opacity=0.05;});
+  }
+  function resetAll(){
+    orbitLines.forEach((l,i)=>{
+      if(!l.visible)return;
+      l.material.opacity=ASTEROIDS_BY_IDX[i].potentially_hazardous?0.45:0.2;
+      l.material.color.setHex(l.userData.baseColor);
+    });
+    asteroidMeshes.forEach(m=>{if(!m.visible)return;m.material.color.setHex(m.userData.baseColor);m.scale.setScalar(1);});
+    haloMeshes.forEach(h=>{if(h&&h.visible)h.material.opacity=0.18;});
+  }
+
+  function selectAsteroid(idx){
+    if(idx===selectedIndex){selectedIndex=-1;resetAll();closePanel();return;}
+    selectedIndex=idx;
+    isAutoRotating=false;
+    document.getElementById('btnToggle').textContent='Resume rotation';
+    dimAll();
+    orbitLines[idx].material.opacity=1;
+    orbitLines[idx].material.color.setHex(0xffffff);
+    asteroidMeshes[idx].material.color.setHex(0xffffff);
+    asteroidMeshes[idx].scale.setScalar(2.4);
+    if(haloMeshes[idx]) haloMeshes[idx].material.opacity=0.38;
+    openPanel(ASTEROIDS_BY_IDX[idx], asteroidNames[idx]);
+  }
+
+  // ── PANEL ─────────────────────────────────────────────────────────────────
+  function statCard(label,value,sub){
+    return`<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 12px;border:0.5px solid rgba(255,255,255,0.08);">
+      <div style="font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.07em;">${label}</div>
+      <div style="font-size:15px;font-weight:600;color:#fff;line-height:1.2;">${value}</div>
+      ${sub?`<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:3px;">${sub}</div>`:''}
+    </div>`;
+  }
+  function barStat(label,value,max,color,display){
+    const pct=Math.min(100,(value/max)*100);
+    return`<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 12px;border:0.5px solid rgba(255,255,255,0.08);">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <span style="font-size:10px;color:rgba(255,255,255,0.38);text-transform:uppercase;letter-spacing:0.07em;">${label}</span>
+        <span style="font-size:13px;font-weight:600;color:#fff;">${display}</span>
+      </div>
+      <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:2px;"></div>
+      </div>
+    </div>`;
+  }
+  function approachCard(ca){
+    const isFuture=ca.year>=2026;
+    const isClose=ca.miss_distance_ld<20;
+    return`<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:9px 11px;border:0.5px solid ${ca.is_hazardous&&isClose?'rgba(255,107,107,0.3)':'rgba(255,255,255,0.08)'};display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:${isFuture?'#ffd43b':'rgba(255,255,255,0.4)'};">${ca.date}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;">${ca.velocity_kms.toFixed(2)} km/s</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:12px;font-weight:600;color:${isClose?'#ff6b6b':'rgba(255,255,255,0.7)'};">${ca.miss_distance_ld.toFixed(1)} LD</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);">${ca.miss_distance_au.toFixed(4)} AU</div>
+      </div>
+    </div>`;
+  }
+
+  function openPanel(ast, name){
+    const color=ast.potentially_hazardous?'#ff6b6b':(classColorHex[ast.orbit_class_type]||'#aaa');
+    document.getElementById('pDot').style.background=color;
+    document.getElementById('pName').textContent=ast.name;
+    const badge=document.getElementById('pBadge');
+    if(ast.potentially_hazardous){
+      badge.textContent='⚠ Potentially hazardous';
+      badge.style.cssText='font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:rgba(255,107,107,0.18);color:#ff6b6b;border:0.5px solid rgba(255,107,107,0.35);';
+    } else {
+      badge.textContent='✓ Non-hazardous';
+      badge.style.cssText='font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:rgba(105,219,124,0.12);color:#69db7c;border:0.5px solid rgba(105,219,124,0.25);';
+    }
+    const classDesc={Apollo:'Earth-crossing',Amor:'Earth-approaching',Aten:'Earth-interior',Atira:'Venus-interior'};
+    document.getElementById('pClass').textContent=
+      `${ast.orbit_class_type} · ${classDesc[ast.orbit_class_type]||'NEA'}`+
+      (ast.discovery_year?` · Discovered ${ast.discovery_year}`:'');
+
+    const dMin=ast.diameter_min_m>=1000?(ast.diameter_min_m/1000).toFixed(2)+' km':Math.round(ast.diameter_min_m)+' m';
+    const dMax=ast.diameter_max_m>=1000?(ast.diameter_max_m/1000).toFixed(2)+' km':Math.round(ast.diameter_max_m)+' m';
+    const dAvg=(ast.diameter_min_m+ast.diameter_max_m)/2;
+    const dAvgStr=dAvg>=1000?(dAvg/1000).toFixed(2)+' km':Math.round(dAvg)+' m';
+
+    document.getElementById('pStats').innerHTML=
+      statCard('Diameter',`${dMin} – ${dMax}`,'min / max')+
+      statCard('Orbital period',`${Math.round(ast.orbital_period)} days`,`${(ast.orbital_period/365.25).toFixed(2)} yrs`)+
+      statCard('Magnitude',ast.magnitude,'abs. brightness')+
+      statCard('Avg diameter',dAvgStr,'midpoint')+
+      (ast.min_orbit_intersection!=null?statCard('MOID',ast.min_orbit_intersection.toFixed(5)+' AU','min orbit intersection'):'');
+
+    document.getElementById('pOrbit').innerHTML=
+      barStat('Eccentricity',ast.eccentricity,1,color,ast.eccentricity.toFixed(4))+
+      barStat('Inclination',ast.inclination,90,color,ast.inclination.toFixed(2)+'°')+
+      barStat('Semi-major axis',ast.semi_major_axis,5,color,ast.semi_major_axis.toFixed(3)+' AU')+
+      barStat('Perihelion',ast.perihelion_distance,5,color,ast.perihelion_distance.toFixed(3)+' AU')+
+      barStat('Aphelion',ast.aphelion_distance,8,color,ast.aphelion_distance.toFixed(3)+' AU');
+
+    const cas=CLOSE_APPROACHES_MAP[name]||[];
+    const sec=document.getElementById('pApproachesSection');
+    if(cas.length>0){
+      sec.style.display='block';
+      const past=cas.filter(c=>c.year<2026).slice(-5);
+      const future=cas.filter(c=>c.year>=2026).slice(0,10);
+      document.getElementById('pApproachLabel').textContent=
+        `Close Approaches · ${past.length} past shown, ${future.length} upcoming (${cas.filter(c=>c.year>=2026).length} total)`;
+      document.getElementById('pApproaches').innerHTML=[...past,...future].map(approachCard).join('');
+    } else { sec.style.display='none'; }
+
+    document.getElementById('panel').style.transform='translateY(0)';
+  }
+
+  function closePanel(){
+    document.getElementById('panel').style.transform='translateY(100%)';
+    selectedIndex=-1; resetAll(); applyFilter();
+  }
+  document.getElementById('panelClose').addEventListener('click',closePanel);
+
+  // ── CAMERA ────────────────────────────────────────────────────────────────
+  let isAutoRotating=true;
+  let isDragging=false,lastX=0,lastY=0,didDrag=false;
+  let sphericalTheta=0.5,sphericalPhi=1.1,sphericalR=10;
+
+  function updateCamera(){
+    camera.position.set(
+      sphericalR*Math.sin(sphericalPhi)*Math.sin(sphericalTheta),
+      sphericalR*Math.cos(sphericalPhi),
+      sphericalR*Math.sin(sphericalPhi)*Math.cos(sphericalTheta)
+    );
+    camera.lookAt(0,0,0);
+  }
+
+  canvas.addEventListener('mousedown',e=>{isDragging=true;lastX=e.clientX;lastY=e.clientY;didDrag=false;});
+  window.addEventListener('mouseup',e=>{
+    if(!didDrag){
+      const rect=canvas.getBoundingClientRect();
+      const ray=new THREE.Raycaster();
+      ray.setFromCamera(new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1),camera);
+      const hits=ray.intersectObjects(asteroidMeshes.filter(m=>m.visible));
+      if(hits.length>0) selectAsteroid(hits[0].object.userData.index);
+    }
+    isDragging=false;
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!isDragging)return;
+    const dx=e.clientX-lastX,dy=e.clientY-lastY;
+    if(Math.abs(dx)>2||Math.abs(dy)>2)didDrag=true;
+    sphericalTheta-=dx*0.008;
+    sphericalPhi=Math.max(0.1,Math.min(Math.PI-0.1,sphericalPhi+dy*0.008));
+    lastX=e.clientX;lastY=e.clientY;updateCamera();
+  });
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    sphericalR=Math.max(2.5,Math.min(25,sphericalR+e.deltaY*0.02));
+    updateCamera();
+  },{passive:false});
+
+  let lastTouchDist=0,touchMoved=false;
+  canvas.addEventListener('touchstart',e=>{
+    if(e.touches.length===1){isDragging=true;lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;touchMoved=false;}
+    if(e.touches.length===2){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;lastTouchDist=Math.sqrt(dx*dx+dy*dy);}
+  });
+  canvas.addEventListener('touchmove',e=>{
+    e.preventDefault();touchMoved=true;
+    if(e.touches.length===1&&isDragging){
+      const dx=e.touches[0].clientX-lastX,dy=e.touches[0].clientY-lastY;
+      sphericalTheta-=dx*0.01;sphericalPhi=Math.max(0.1,Math.min(Math.PI-0.1,sphericalPhi+dy*0.01));
+      lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;updateCamera();
+    }
+    if(e.touches.length===2){
+      const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      sphericalR=Math.max(2.5,Math.min(25,sphericalR-(dist-lastTouchDist)*0.04));
+      lastTouchDist=dist;updateCamera();
+    }
+  },{passive:false});
+  canvas.addEventListener('touchend',e=>{
+    if(!touchMoved&&e.changedTouches.length===1){
+      const rect=canvas.getBoundingClientRect();
+      const ray=new THREE.Raycaster();
+      ray.setFromCamera(new THREE.Vector2(((e.changedTouches[0].clientX-rect.left)/rect.width)*2-1,-((e.changedTouches[0].clientY-rect.top)/rect.height)*2+1),camera);
+      const hits=ray.intersectObjects(asteroidMeshes.filter(m=>m.visible));
+      if(hits.length>0) selectAsteroid(hits[0].object.userData.index);
+    }
+    isDragging=false;
+  });
+
+  // ── TOOLTIP ───────────────────────────────────────────────────────────────
+  const tip=document.getElementById('tip');
+  const hoverRay=new THREE.Raycaster();
+  const mouse=new THREE.Vector2(-9,-9);
+
+  canvas.addEventListener('mousemove',e=>{
+    if(isDragging){tip.style.display='none';return;}
+    const rect=canvas.getBoundingClientRect();
+    mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+    mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+    hoverRay.setFromCamera(mouse,camera);
+    const hits=hoverRay.intersectObjects(asteroidMeshes.filter(m=>m.visible));
+    if(hits.length>0){
+      const {ast,name}=hits[0].object.userData;
+      const cas=CLOSE_APPROACHES_MAP[name]||[];
+      const next=cas.find(c=>c.year>=2026);
+      tip.innerHTML=
+        `<b style="color:#fff;display:block;margin-bottom:3px;">${ast.short_name}</b>`+
+        `<span style="color:rgba(255,255,255,0.45);font-size:10px;">${ast.orbit_class_type} · ${ast.potentially_hazardous?'⚠ hazardous':'non-hazardous'}</span>`+
+        (next?`<br><span style="color:rgba(255,255,255,0.35);font-size:10px;">Next: ${next.date} at ${next.miss_distance_ld.toFixed(1)} LD</span>`:'')+
+        `<br><span style="color:rgba(255,255,255,0.25);font-size:10px;display:block;margin-top:2px;">Click to inspect</span>`;
+      tip.style.display='block';
+      const ar=wrap.getBoundingClientRect();
+      tip.style.left=Math.min(e.clientX-ar.left+14,wrap.clientWidth-215)+'px';
+      tip.style.top=Math.max(e.clientY-ar.top-10,4)+'px';
+      canvas.style.cursor='pointer';
+    } else {
+      tip.style.display='none';
+      canvas.style.cursor='default';
+    }
+  });
+  canvas.addEventListener('mouseleave',()=>tip.style.display='none');
+
+  // ── BUTTONS ───────────────────────────────────────────────────────────────
+  document.getElementById('btnReset').addEventListener('click',()=>{
+    sphericalTheta=0.5;sphericalPhi=1.1;sphericalR=10;updateCamera();
+    isAutoRotating=true;document.getElementById('btnToggle').textContent='Pause rotation';
+    closePanel();
+  });
+  document.getElementById('btnToggle').addEventListener('click',function(){
+    isAutoRotating=!isAutoRotating;
+    this.textContent=isAutoRotating?'Pause rotation':'Resume rotation';
+  });
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  updateCamera();
+  function animate(){
+    requestAnimationFrame(animate);
+    if(isAutoRotating){sphericalTheta+=0.002;updateCamera();}
+    renderer.render(scene,camera);
+  }
+  animate();
+})();
+</script>
+</body>
+</html>
