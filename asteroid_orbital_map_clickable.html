@@ -317,7 +317,7 @@
 
   // ── ASTEROIDS: dots + time-fading white comet trails ────────────────────────
   const HAZ_TINT=new THREE.Color(0xffb3a8), WHITE=new THREE.Color(0xdfe7f2), SEL_COL=new THREE.Color(0x9fe6ff);
-  const TRAIL_K=46;            // samples per trail
+  const TRAIL_K=100;            // samples per trail
   const TRAIL_MIN_STEP=0.4;    // min sim-days between samples
 
   // one Points object for all asteroid heads
@@ -325,7 +325,7 @@
   const dotGeo=new THREE.BufferGeometry();
   dotGeo.setAttribute('position',new THREE.BufferAttribute(dotPos,3));
   dotGeo.setAttribute('color',new THREE.BufferAttribute(dotCol,3));
-  const dots=new THREE.Points(dotGeo,new THREE.PointsMaterial({size:0.06,map:softTex,vertexColors:true,
+  const dots=new THREE.Points(dotGeo,new THREE.PointsMaterial({size:0.12,map:softTex,vertexColors:true,
     transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}));
   scene.add(dots);
 
@@ -354,7 +354,7 @@
 
   // ════════════════════════════ TIME ENGINE ══════════════════════════════════
   const SPEEDS=[{l:'1d',v:1},{l:'1w',v:7},{l:'1mo',v:30},{l:'3mo',v:91},{l:'1yr',v:365}];
-  let speedIdx=2,dir=1,playing=true,simJd=START_JD;
+  let speedIdx=1,dir=1,playing=true,simJd=START_JD;
   let selected=null,following=false;
 
   const speedsEl=$('speeds');
@@ -414,6 +414,7 @@
     card.classList.add('show');
   }
   function selectAst(el,jumpTime){
+    el._orbitR = Math.max(3.0, Math.min(30, el.a * AU * 2.6 + 2.0));
     selected=el;following=true;
     AST.forEach(o=>o.dim=true); el.dim=false;
     if(jumpTime!==false){ simJd=el.eventJd; setPlaying(false); clearTrails(); $('status').innerHTML=`<span class="hot">◉ FOLLOWING</span> ${el.ref.short_name} — press play to track it`; }
@@ -452,6 +453,7 @@
   const resultsEl=$('results');
   function renderResults(q){
     q=(q||'').trim().toLowerCase();
+    if(!q){resultsEl.classList.remove('show');return;}  // add this line
     let list=AST.filter(el=>matchFilter(el));
     if(q) list=list.filter(el=>el.ref.short_name.toLowerCase().includes(q)||el.ref.name.toLowerCase().includes(q));
     list=list.slice(0,9);
@@ -483,7 +485,7 @@
   addEventListener('mouseup',e=>{
     // only treat as a scene click if the press started on the canvas — clicking
     // UI (play/speed/etc.) must not deselect the followed asteroid.
-    if(downOnCanvas&&!moved){const el=pickDot(e.clientX,e.clientY); if(el)selectAst(el,true); else deselect();}
+    if(downOnCanvas&&!moved){const el=pickDot(e.clientX,e.clientY); if(el)selectAst(el,false); else deselect();}
     downOnCanvas=false;dragging=false;
   });
   addEventListener('mousemove',e=>{
@@ -506,7 +508,7 @@
       if(pinch>0)zoomMul=Math.max(0.18,Math.min(5,zoomMul*(pinch/d)));pinch=d;}
   },{passive:false});
   canvas.addEventListener('touchend',e=>{
-    if(!tMoved&&e.changedTouches.length===1){const el=pickDot(e.changedTouches[0].clientX,e.changedTouches[0].clientY);if(el)selectAst(el,true);else deselect();}
+    if(!tMoved&&e.changedTouches.length===1){const el=pickDot(e.changedTouches[0].clientX,e.changedTouches[0].clientY);if(el)selectAst(el,false);else deselect();}
     dragging=false;
   });
 
@@ -564,7 +566,7 @@
       for(const p of planetVis){
         p.orbit.position.copy(_sun);
         _p.copy(posAt(p.el,simJd,AU)).sub(earthHelio);
-        p.mesh.position.copy(_p);p.label.position.set(_p.x,_p.y+0.12,_p.z);
+        p.mesh.position.copy(_p);p.label.position.set(_p.x,_p.y+0.24,_p.z);
       }
     }
 
@@ -621,7 +623,7 @@
     // the asteroid and Earth framed together.
     camTarget.set(0,0,0);
     if(following&&selected&&!selected.hidden){
-      desR=Math.max(3.0,Math.min(30,(astPos.length()*2.6+2.0)*zoomMul));
+      desR=selected._orbitR*zoomMul;
     }else desR=DEFAULT_R*zoomMul;
     actR+=(desR-actR)*0.1;
     updateCamera();
