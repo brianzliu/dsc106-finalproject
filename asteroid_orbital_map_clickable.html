@@ -39,21 +39,22 @@
   #title em{font-style:italic;color:var(--cyan);}
 
   /* search / filter — flush top-right */
-  #finder{position:absolute;top:24px;right:24px;width:248px;display:flex;flex-direction:column;gap:9px;
+  #finder{position:absolute;top:24px;right:24px;width:330px;display:flex;flex-direction:column;gap:9px;
     opacity:0;animation:fade 0.9s 0.35s forwards;}
   #searchBox{display:flex;align-items:center;gap:9px;padding:9px 13px;}
   #searchBox svg{flex-shrink:0;opacity:0.5;}
-  #search{flex:1;background:none;border:none;outline:none;color:var(--ink);font-family:var(--mono);font-size:12px;}
+  #search{flex:1;background:none;border:none;outline:none;color:var(--ink);font-family:var(--sans);font-size:14px;}
   #search::placeholder{color:var(--faint);}
   #results{max-height:240px;overflow-y:auto;padding:5px;display:none;}
   #results.show{display:block;}
   .res{padding:8px 10px;border-radius:8px;cursor:pointer;font-size:11.5px;display:flex;justify-content:space-between;gap:10px;}
   .res:hover{background:rgba(255,255,255,0.06);}
   .res .nm{color:var(--ink);}
-  .res .meta{color:var(--faint);font-size:10px;white-space:nowrap;}
+  .res .meta{color:var(--faint);font-size:11px;white-space:nowrap;}
   .res .meta.haz{color:var(--coral);}
-  .chips{display:flex;flex-wrap:wrap;gap:6px;}
-  .chip{font-size:10px;letter-spacing:0.04em;padding:6px 10px;border-radius:8px;border:1px solid var(--line);
+  .chips{display:flex;flex-wrap:wrap;gap:7px;}
+  .chips::before{content:"Show";font-family:var(--sans);font-size:12px;color:var(--dim);width:100%;}
+  .chip{font-family:var(--sans);font-size:12px;letter-spacing:0.01em;padding:7px 11px;border-radius:999px;border:1px solid var(--line);
     background:rgba(255,255,255,0.03);color:var(--faint);cursor:pointer;transition:all 0.18s;}
   .chip:hover{color:var(--ink);}
   .chip.on{color:var(--amber);border-color:var(--amber);background:rgba(255,200,97,0.1);}
@@ -61,7 +62,8 @@
   /* view buttons — flush, below finder */
   #viewBtns{position:absolute;top:118px;right:24px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;
     opacity:0;animation:fade 0.9s 0.45s forwards;}
-  .vbtn{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+  #viewBtns::before{content:"View";font-family:var(--sans);font-size:12px;color:var(--dim);align-self:flex-end;}
+  .vbtn{font-family:var(--sans);font-size:12px;letter-spacing:0.01em;
     background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:7px 12px;cursor:pointer;
     transition:all 0.2s;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
   .vbtn:hover{border-color:var(--cyan);color:var(--ink);}
@@ -70,7 +72,7 @@
   .vbtn.zb{width:38px;text-align:center;font-size:15px;padding:5px 0;line-height:1;}
 
   /* selected-asteroid card — flush bottom-left */
-  #card{position:absolute;left:24px;bottom:24px;width:300px;padding:19px 21px;z-index:30;
+  #card{position:absolute;left:24px;bottom:24px;width:330px;padding:18px 20px;z-index:30;
     max-height:calc(100vh - 48px);overflow-y:auto;
     transform:translateY(14px);opacity:0;pointer-events:none;transition:opacity 0.4s,transform 0.4s cubic-bezier(0.22,1,0.36,1);}
   #card::-webkit-scrollbar{width:0;}
@@ -79,37 +81,28 @@
   body.guided #card{left:auto;right:24px;}
   body.embedded #title{display:none!important;}
   #card.show{opacity:1;transform:translateY(0);pointer-events:auto;}
-  #card .nm{font-family:var(--serif);font-size:31px;line-height:1.05;margin-bottom:12px;}
-  #card .badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:20px;margin-left:7px;vertical-align:middle;letter-spacing:0.08em;}
+  #card .nm{font-family:var(--serif);font-size:30px;line-height:1.05;margin-bottom:12px;padding-right:22px;}
+  #card .badge{display:inline-block;font-family:var(--sans);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:7px;vertical-align:middle;letter-spacing:0.06em;}
   #card .cls{display:none;}
-  #card .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  #card .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px;}
   #card .k{display:none;}
-  #card .v{font-size:22px;line-height:1.15;color:var(--ink);} #card .v small{font-size:15px;color:var(--dim);}
+  #card .lbl{font-family:var(--sans);font-size:14px;line-height:1.2;color:var(--dim);margin-bottom:8px;}
+  #card .metric svg{width:100%;height:62px;display:block;margin-bottom:8px;}
+  #card .v{font-size:23px;line-height:1.12;color:var(--ink);} #card .v small{font-size:16px;color:var(--dim);}
   #card .metric{border:1px solid var(--line-soft);border-radius:11px;padding:12px;background:rgba(255,255,255,0.025);}
   #card .miss{grid-column:1/3;padding:13px;border:1px solid var(--line-soft);border-radius:11px;background:rgba(255,255,255,0.025);}
-  #card .miss .v{font-size:30px;color:var(--coral);} #card.safe .miss .v{color:var(--cyan);}
+  #card .miss .v{font-size:29px;color:var(--coral);white-space:normal;} #card.safe .miss .v{color:var(--cyan);}
+  #card .miss small{display:inline;font-size:18px;margin-left:8px;color:inherit;white-space:nowrap;}
+  #card .miss .km{color:var(--dim);}
   #card .close{position:absolute;top:13px;right:14px;background:none;border:none;color:var(--faint);font-size:15px;cursor:pointer;line-height:1;}
   #card .close:hover{color:var(--ink);}
-  /* per-asteroid threat assessment */
+  /* per-asteroid closest-pass diagram */
   #card .threat{margin-top:15px;padding-top:13px;border-top:1px solid var(--line-soft);}
-  #card .threat .k{display:block;font-family:var(--mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:18px;color:var(--amber);}
-  #card .ladder{position:relative;height:26px;margin:0 4px 30px;}
-  #card .ladder .bar{position:absolute;left:0;right:0;top:11px;height:3px;border-radius:3px;
-    background:linear-gradient(90deg,rgba(111,211,255,0.5),rgba(255,200,97,0.6),rgba(255,107,107,0.85));}
-  #card .ladder .chic{position:absolute;top:8px;height:9px;border-radius:2px;background:rgba(255,107,107,0.32);
-    border:1px solid rgba(255,107,107,0.6);}
-  #card .ladder .tier{position:absolute;top:5px;transform:translateX(-50%);}
-  #card .ladder .tier span{display:block;width:1px;height:15px;margin:0 auto;background:rgba(255,255,255,0.35);}
-  #card .ladder .tier i{display:none;}
-  #card .ladder .me{position:absolute;top:1px;transform:translateX(-50%);z-index:3;}
-  #card .ladder .me::after{content:'';display:block;width:11px;height:11px;border-radius:50%;margin:0 auto;
-    background:var(--cyan);box-shadow:0 0 10px var(--cyan);border:2px solid var(--bg);}
-  #card .ladder .me.big::after{background:var(--coral);box-shadow:0 0 12px var(--coral);}
-  #card .ladder .me b{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--ink);white-space:nowrap;font-weight:700;}
-  #card .verdict{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  #card .threat > .k{display:none;}
+  #card .verdict{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px;}
   #card .mini{border:1px solid var(--line-soft);border-radius:10px;padding:9px;background:rgba(255,255,255,0.025);}
   #card .mini .k{display:none;}
-  #card .mini svg{width:100%;height:70px;display:block;}
+  #card .mini svg{width:100%;height:92px;display:block;}
   #card .mini .v2{font-size:18px;color:var(--ink);margin-top:8px;line-height:1.2;}
 
   /* time console — flush bottom-center */
@@ -118,9 +111,9 @@
   #ctop{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:11px;}
   #bigDate{font-family:var(--serif);font-size:34px;line-height:0.95;letter-spacing:0.015em;}
   #bigDate .yr{color:var(--amber);}
-  #status{font-size:10px;color:var(--faint);margin-top:3px;min-height:13px;letter-spacing:0.04em;}
+  #status{display:none;}
   #status .hot{color:var(--cyan);}
-  #rateVal{font-size:13px;color:var(--cyan);text-align:right;}
+  #rateVal{display:none;}
   #scrub{position:relative;height:30px;margin:2px 0 11px;cursor:pointer;}
   #track{position:absolute;left:0;right:0;top:13px;height:3px;background:rgba(255,255,255,0.1);border-radius:3px;}
   #trackFill{position:absolute;left:0;top:0;height:100%;background:var(--cyan);opacity:0.55;border-radius:3px;width:0;}
@@ -143,6 +136,7 @@
   .speeds{display:flex;gap:5px;}
   .spd{font-size:9.5px;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--faint);cursor:pointer;transition:all 0.18s;}
   .spd:hover{color:var(--ink);} .spd.on{color:var(--amber);border-color:var(--amber);background:rgba(255,200,97,0.1);}
+  body.embedded .speeds, body.embedded .sep, body.embedded #btnRev{display:none;}
 
   #tip{position:absolute;pointer-events:none;background:var(--panel-solid);border:1px solid var(--line);
     border-radius:9px;padding:7px 11px;font-size:11px;display:none;max-width:200px;z-index:40;}
@@ -192,16 +186,16 @@
   <div id="finder">
     <div id="searchBox" class="panel">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="search" placeholder="Search asteroids…" autocomplete="off"/>
+      <input id="search" placeholder="Search by name, e.g. Apophis" autocomplete="off"/>
     </div>
     <div id="results" class="panel"></div>
     <div class="chips" id="chips"></div>
   </div>
 
   <div id="viewBtns">
-    <button class="vbtn" id="btnScale">Planets</button>
-    <button class="vbtn" id="btnTop">Top-down</button>
-    <button class="vbtn" id="btnReset">Reset</button>
+    <button class="vbtn" id="btnScale">Solar system</button>
+    <button class="vbtn" id="btnTop">Top view</button>
+    <button class="vbtn" id="btnReset">Reset view</button>
     <div class="zoomrow">
       <button class="vbtn zb" id="btnZoomOut" title="Zoom out">−</button>
       <button class="vbtn zb" id="btnZoomIn" title="Zoom in">+</button>
@@ -489,6 +483,30 @@
   $('btnZoomOut').onclick=()=>{camManual();zoomMul=Math.min(5,zoomMul*1.22);};
 
   // ── SELECTION / FOLLOW ──────────────────────────────────────────────────────
+  function sizeMetricSVG(d,haz){
+    const r=Math.max(8,Math.min(28,Math.sqrt((d||1)/10000)*28));
+    const col=haz?'#ff7a72':'#7fd8ff';
+    return `<svg viewBox="0 0 120 62" aria-hidden="true">
+      <defs><radialGradient id="cardSizeAst" cx="34%" cy="28%" r="72%"><stop offset="0%" stop-color="${col}"/><stop offset="100%" stop-color="rgba(127,216,255,0.25)"/></radialGradient></defs>
+      <path d="M ${60-r*.9} ${31-r*.6} L ${60-r*.2} ${31-r} L ${60+r*.75} ${31-r*.7} L ${60+r} ${31+r*.15} L ${60+r*.35} ${31+r*.8} L ${60-r*.55} ${31+r*.75} L ${60-r} ${31+r*.05} Z"
+        fill="url(#cardSizeAst)" stroke="${col}" stroke-width="1.4" opacity="0.95"/>
+      <circle cx="${60-r*.2}" cy="${31-r*.05}" r="${Math.max(2,r*.18)}" fill="rgba(4,6,15,0.28)"/>
+      <circle cx="${60+r*.22}" cy="${31+r*.16}" r="${Math.max(1.7,r*.13)}" fill="rgba(4,6,15,0.22)"/>
+    </svg>`;
+  }
+  function speedMetricSVG(v,haz){
+    const pct=Math.max(6,Math.min(96,(v||0)/36*100));
+    const col=haz?'#ff7a72':'#7fd8ff';
+    const x=12+pct*0.96;
+    const trail=Math.max(12,Math.min(44,(v||0)*1.25));
+    return `<svg viewBox="0 0 120 62" aria-hidden="true">
+      <line x1="12" x2="108" y1="38" y2="38" stroke="rgba(255,255,255,0.14)" stroke-width="4" stroke-linecap="round"/>
+      <line x1="12" x2="${x}" y1="38" y2="38" stroke="${col}" stroke-width="4" stroke-linecap="round"/>
+      <line x1="${Math.max(12,x-trail)}" x2="${x-8}" y1="25" y2="25" stroke="${col}" stroke-width="2.3" stroke-linecap="round" opacity="0.55"/>
+      <line x1="${Math.max(12,x-trail*.75)}" x2="${x-8}" y1="31" y2="31" stroke="${col}" stroke-width="2.3" stroke-linecap="round" opacity="0.75"/>
+      <circle cx="${x}" cy="38" r="7" fill="${col}" opacity="0.95"/>
+    </svg>`;
+  }
   function showCard(el){
     const a=el.ref,ev=el.event;
     const km=ev.miss_distance_au*149597870.7;
@@ -498,48 +516,28 @@
     card.innerHTML=
       `<button class="close" title="Deselect">✕</button>`+
       `<div class="nm">${a.short_name}<span class="badge" style="${el.haz?'background:rgba(255,107,107,.16);color:var(--coral)':'background:rgba(111,211,255,.14);color:var(--cyan)'}">${el.haz?'HAZARDOUS':'SAFE'}</span></div>`+
-      `<div class="cls">${a.orbit_class_type} · ${ev.date}</div>`+
       `<div class="grid">`+
-        `<div><div class="k">How big</div><div class="v">${dia}</div></div>`+
-        `<div><div class="k">How fast</div><div class="v">${ev.velocity_kms.toFixed(0)} <small>km/s</small></div></div>`+
-        `<div class="miss"><div class="k">Closest it gets to Earth</div><div class="v">${ev.miss_distance_ld.toFixed(2)} <small style="font-size:11px">LD · ${kmStr}</small></div></div>`+
+        `<div class="metric"><div class="lbl">Size</div>${sizeMetricSVG(a.diameter_max_m,el.haz)}<div class="v">${dia}</div></div>`+
+        `<div class="metric"><div class="lbl">Speed</div>${speedMetricSVG(ev.velocity_kms,el.haz)}<div class="v">${ev.velocity_kms.toFixed(0)} <small>km/s</small></div></div>`+
+        `<div class="miss"><div class="lbl">Closest pass</div><div class="v">${ev.miss_distance_ld.toFixed(2)} <small>LD <span class="km">(${kmStr})</span></small></div></div>`+
       `</div>`+
       threatHTML(a,ev);
     card.querySelector('.close').onclick=deselect;
     card.classList.add('show');
   }
-  // ── PER-ASTEROID THRESHOLD / "would it end the world?" ASSESSMENT ────────────
-  // Where this specific object sits on the size ladder, and how far it is from a
-  // collision, relative to the dinosaur-killer (Chicxulub ≈ 10–15 km).
+  // ── PER-ASTEROID CLOSEST-PASS DIAGRAM ───────────────────────────────────────
   function threatHTML(a,ev){
-    const d=a.diameter_max_m||0, ld=ev.miss_distance_ld;
-    // size ladder 100 m → 15 km on a log scale; tiers at 140 m, 1 km, 10 km
-    const lo=Math.log10(100), hi=Math.log10(15000);
-    const pos=v=>Math.max(0,Math.min(100,(Math.log10(Math.max(100,v))-lo)/(hi-lo)*100));
-    const tier=(v,l)=>`<div class="tier" style="left:${pos(v)}%"><span></span><i>${l}</i></div>`;
-    const chic=`<div class="chic" style="left:${pos(10000)}%;width:${pos(15000)-pos(10000)}%"></div>`;
-    const dotPct=pos(d);
+    const ld=ev.miss_distance_ld;
     const kmMiss = ld*384400;
     const missTxt = kmMiss>=1e6?(kmMiss/1e6).toFixed(1)+'M km':Math.round(kmMiss).toLocaleString()+' km';
-    const sizePct=Math.max(4,Math.min(96,Math.sqrt(d/12000)*90));
-    const missArc=Math.max(18,Math.min(82,ld/20*70));
+    const passY=ld<1?16:Math.max(12,28-Math.min(18,ld*0.85));
+    const earthY=39;
     return `<div class="threat">`+
-      `<div class="k">Size vs. impact</div>`+
-      `<div class="ladder">${chic}`+
-        `<div class="bar"></div>`+
-        tier(140,'140m')+tier(1000,'1km')+tier(10000,'10km')+
-        `<div class="me ${d>=10000?'big':''}" style="left:${dotPct}%"><b>${d>=1000?(d/1000).toFixed(1)+'km':Math.round(d)+'m'}</b></div>`+
-      `</div>`+
       `<div class="verdict">`+
-        `<div class="mini"><div class="k">Dinosaur-killer scale</div><svg viewBox="0 0 120 54" aria-hidden="true">`+
-          `<line x1="8" x2="112" y1="28" y2="28" stroke="rgba(255,255,255,.14)" stroke-width="7" stroke-linecap="round"/>`+
-          `<line x1="8" x2="${8+sizePct}" y1="28" y2="28" stroke="${d>=10000?'#ff7a72':'#7fd8ff'}" stroke-width="7" stroke-linecap="round"/>`+
-          `<circle cx="112" cy="28" r="6" fill="#ff7a72"/><text x="112" y="50" fill="rgba(226,231,243,.55)" font-size="7" text-anchor="middle">Chicxulub</text></svg>`+
-          `<div class="v2">${d>=1000?(d/1000).toFixed(1)+' km':Math.round(d)+' m'}</div></div>`+
-        `<div class="mini"><div class="k">Closest pass</div><svg viewBox="0 0 120 54" aria-hidden="true">`+
-          `<circle cx="60" cy="31" r="8" fill="#3d7fc4"/><path d="M 12 34 Q 60 ${34-missArc*.45} 108 34" fill="none" stroke="${ld<1?'#ff7a72':'#7fd8ff'}" stroke-width="2" stroke-dasharray="4 3"/>`+
-          `<circle cx="60" cy="${34-missArc*.22}" r="3.5" fill="${ld<1?'#ff7a72':'#7fd8ff'}"/></svg>`+
-          `<div class="v2">${ld.toFixed(2)} LD · ${missTxt}</div></div>`+
+        `<div class="mini"><div class="lbl">Closest pass diagram</div><svg viewBox="0 0 120 62" aria-hidden="true">`+
+          `<circle cx="60" cy="${earthY}" r="8" fill="#3d7fc4"/><path d="M 12 ${passY+8} Q 60 ${passY-6} 108 ${passY+8}" fill="none" stroke="${ld<1?'#ff7a72':'#7fd8ff'}" stroke-width="2.5" stroke-dasharray="4 3"/>`+
+          `<circle cx="60" cy="${passY+1}" r="3.8" fill="${ld<1?'#ff7a72':'#7fd8ff'}"/></svg>`+
+          `<div class="v2">${ld.toFixed(2)} LD<br>(${missTxt})</div></div>`+
       `</div>`+
     `</div>`;
   }
@@ -568,11 +566,13 @@
   }
 
   // ── SEARCH + FILTER ──────────────────────────────────────────────────────────
-  let filter='all'; // all | hazardous | Apollo | Amor | Aten | Atira
+  let filter='all'; // all | hazardous | close | large
   function matchFilter(el){
     if(filter==='all')return true;
     if(filter==='hazardous')return el.haz;
-    return el.ref.orbit_class_type===filter;
+    if(filter==='close')return el.event.miss_distance_ld<=10;
+    if(filter==='large')return (el.ref.diameter_max_m||0)>=1000;
+    return true;
   }
   function applyFilter(){
     AST.forEach(el=>{
@@ -584,7 +584,7 @@
     if(selected&&selected.hidden) deselect();
   }
   const chipsEl=$('chips');
-  [['all','All'],['hazardous','Hazardous'],['Apollo','Apollo'],['Amor','Amor'],['Aten','Aten']].forEach(([v,lbl])=>{
+  [['all','All'],['hazardous','Red / monitored'],['close','Closest passes'],['large','Large asteroids']].forEach(([v,lbl])=>{
     const b=document.createElement('button');b.className='chip'+(v==='all'?' on':'');b.textContent=lbl;
     b.onclick=()=>{filter=v;[...chipsEl.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');applyFilter();renderResults($('search').value);};
     chipsEl.appendChild(b);
@@ -600,7 +600,7 @@
     if(!list.length){resultsEl.classList.remove('show');return;}
     resultsEl.innerHTML=list.map(el=>
       `<div class="res" data-i="${el.idx}"><span class="nm">${el.ref.short_name}</span>`+
-      `<span class="meta ${el.haz?'haz':''}">${el.event.miss_distance_ld.toFixed(1)} LD · ${el.event.date.slice(0,4)}</span></div>`).join('');
+      `<span class="meta ${el.haz?'haz':''}">${el.event.miss_distance_ld.toFixed(1)} LD (${el.event.date.slice(0,4)})</span></div>`).join('');
     resultsEl.querySelectorAll('.res').forEach(r=>r.onclick=()=>selectAst(AST[+r.dataset.i],true));
     resultsEl.classList.add('show');
   }
@@ -646,6 +646,7 @@
     lastX=e.clientX;lastY=e.clientY;
   });
   const EMBEDDED = window.parent !== window;   // true when hosted in the scrollytelling page
+  if(EMBEDDED) document.body.classList.add('embedded');
   canvas.addEventListener('wheel',e=>{
     // When embedded, the wheel always belongs to the PAGE — forward it so the
     // narrative scrolls (both directions) and is never hijacked into zoom.
@@ -678,7 +679,7 @@
     if(dragging){tip.style.display='none';return;}
     const el=pickDot(e.clientX,e.clientY);
     if(el){const dm=el.ref.diameter_max_m, dia=dm>=1000?(dm/1000).toFixed(1)+' km':Math.round(dm)+' m';
-      tip.innerHTML=`<b>${el.ref.short_name}</b><br><span class="s">${dia} wide · misses by ${el.event.miss_distance_ld.toFixed(1)} LD</span>`;
+      tip.innerHTML=`<b>${el.ref.short_name}</b><br><span class="s">${dia} wide (${el.event.miss_distance_ld.toFixed(1)} LD miss)</span>`;
       tip.style.display='block';tip.style.left=Math.min(e.clientX+14,innerWidth-210)+'px';tip.style.top=(e.clientY-8)+'px';canvas.style.cursor='pointer';}
     else{tip.style.display='none';canvas.style.cursor='default';}
   });
@@ -806,7 +807,7 @@
       link.material.opacity=0.72+0.24*Math.sin(now*0.006);
       const distLd=astPos.length()/AU*AU_TO_LD;
       if($('card').classList.contains('show'))
-        $('status').innerHTML=`<span class="hot">◉ FOLLOWING</span> ${selected.ref.short_name} · ${distLd.toFixed(1)} LD from Earth now`;
+        $('status').innerHTML=`${selected.ref.short_name} (${distLd.toFixed(1)} LD from Earth)`;
       // always-on floating label that tracks the asteroid on screen (replaces the old pill)
       _proj.copy(astPos).project(camera);
       if(_proj.z<1){
@@ -815,7 +816,7 @@
         astLabelEl.style.left=((_proj.x*0.5+0.5)*innerWidth)+'px';
         astLabelEl.style.top=((-_proj.y*0.5+0.5)*innerHeight - 16)+'px';
         astLabelNm.textContent=selected.ref.short_name;
-        astLabelLd.textContent=' · '+(distLd<1?distLd.toFixed(2):distLd.toFixed(1))+' LD from Earth';
+        astLabelLd.textContent='  '+(distLd<1?distLd.toFixed(2):distLd.toFixed(1))+' LD from Earth';
       } else astLabelEl.style.display='none';
       // still emit a throttled tick for any external listeners
       if(now-lastTick>110){ lastTick=now;
@@ -832,12 +833,15 @@
 
     // camera — Earth locked at origin; following only adjusts zoom to keep both
     // the asteroid and Earth framed together.
-    camTarget.lerp(camTargetGoal,0.05);
     if(following&&selected&&!selected.hidden){
       // frame Earth + the asteroid wherever it actually is, so a focused object is
       // never tiny or off-screen regardless of its real distance.
-      desR=Math.max(selected._orbitR*0.5, selDist*2.4)*zoomMul;
-    }else desR=DEFAULT_R*zoomMul;
+      camTarget.lerp(astPos.clone().multiplyScalar(0.36),0.08);
+      desR=Math.max(6, selected._orbitR*0.6, selDist*1.65)*zoomMul;
+    }else{
+      camTarget.lerp(camTargetGoal,0.05);
+      desR=DEFAULT_R*zoomMul;
+    }
     actR+=(desR-actR)*0.1;
     updateCamera();
 
@@ -846,7 +850,7 @@
     const f=(simJd-START_JD)/(END_JD-START_JD);
     $('handle').style.left=(f*100)+'%';$('trackFill').style.width=(f*100)+'%';
     $('tbDate').innerHTML=fmtDate(simJd);
-    $('tbRate').textContent=(playing?'playing · ':'paused · ')+SPEEDS[speedIdx].l+' / s';
+    $('tbRate').textContent=playing?'playing':'paused';
     $('tbFill').style.width=(f*100)+'%';
 
     renderer.render(scene,camera);
@@ -867,7 +871,7 @@
   function preset(p){
     if(p==='overview'){ deselect(); camGoal({phi:0.16,theta:0,zoom:1.05,spin:0.04}); }
     else if(p==='top'){ camGoal({phi:0.05,theta:0,zoom:1,spin:0}); }
-    else if(p==='closeup'){ camGoal({phi:0.5,zoom:0.5,spin:0}); }
+    else if(p==='closeup'){ camGoal({phi:0.46,zoom:0.82,spin:0}); }
     else if(p==='wide'){ deselect(); camGoal({phi:0.22,theta:0.5,zoom:1.25,spin:0}); }
     else if(p==='free'){ camManual(); }
   }
