@@ -777,6 +777,45 @@
         },{rootMargin:'-45% 0px -45% 0px',threshold:0});
         steps.forEach(s=>io.observe(s));
     }
+
+    /* ════════════════════════ KEYBOARD STEP NAVIGATION ════════════════════════ */
+    (function(){
+        const steps=[...document.querySelectorAll('.step')];
+        let currentStep=-1, isKeyScrolling=false;
+
+        function getActiveStepIndex(){
+            // find whichever step is closest to the middle of the viewport
+            const mid=innerHeight/2;
+            let best=-1, bestDist=Infinity;
+            steps.forEach((s,i)=>{
+                const r=s.getBoundingClientRect();
+                const dist=Math.abs((r.top+r.bottom)/2 - mid);
+                if(dist<bestDist){bestDist=dist;best=i;}
+            });
+            return best;
+        }
+
+        function scrollToStep(i){
+            if(i<0||i>=steps.length) return;
+            currentStep=i;
+            isKeyScrolling=true;
+            const target=steps[i].getBoundingClientRect().top+scrollY - innerHeight*0.5 + steps[i].offsetHeight*0.5;
+            window.scrollTo({top:target,behavior:'smooth'});
+            // re-enable mouse scroll after animation completes
+            setTimeout(()=>isKeyScrolling=false, 700);
+        }
+
+        addEventListener('keydown',e=>{
+            if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+                e.preventDefault();
+                const cur=getActiveStepIndex();
+                const next=e.key==='ArrowDown'
+                    ? Math.min(steps.length-1, cur+1)
+                    : Math.max(0, cur-1);
+                scrollToStep(next);
+            }
+        });
+    })();
     </script>
 </body>
 </html>
