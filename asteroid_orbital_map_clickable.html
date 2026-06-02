@@ -417,6 +417,7 @@
     el._orbitR = Math.max(3.0, Math.min(30, el.a * AU * 2.6 + 2.0));
     selected=el;following=true;
     AST.forEach(o=>o.dim=true); el.dim=false;
+    el.samp.length=0;el.lastSampJd=null;el.line.geometry.setDrawRange(0,0);
     if(jumpTime!==false){ simJd=el.eventJd; setPlaying(false); clearTrails(); $('status').innerHTML=`<span class="hot">◉ FOLLOWING</span> ${el.ref.short_name} — press play to track it`; }
     const tf=(el.eventJd-START_JD)/(END_JD-START_JD);
     selTick.style.left=(tf*100)+'%'; selTick.style.display='block';
@@ -471,7 +472,9 @@
   document.addEventListener('click',e=>{if(!$('finder').contains(e.target))resultsEl.classList.remove('show');});
 
   // ── PICKING / ORBIT CONTROLS ─────────────────────────────────────────────────
-  const ray=new THREE.Raycaster();ray.params.Points={threshold:0.13};
+  const ray=new THREE.Raycaster();
+  ray.params.Points={threshold:0.13};
+  ray.params.Line={threshold:0.13};
   const ndc=new THREE.Vector2();
   let dragging=false,lastX=0,lastY=0,moved=false;
   function pickDot(cx,cy){
@@ -479,7 +482,14 @@
     ndc.set(((cx-r.left)/r.width)*2-1,-((cy-r.top)/r.height)*2+1);
     ray.setFromCamera(ndc,camera);
     const hits=ray.intersectObject(dots);
-    for(const h of hits){const el=AST[h.index];if(el&&!el.hidden)return el;}
+    for(const h of hits){const el=AST[h.index];if(el&&!el.hidden&&(!selected||el===selected))return el;}
+    const lines=AST.filter(el=>!el.hidden&&el.samp.length>=6&&(!selected||el===selected)).map(el=>el.line);
+    const lineHits=ray.intersectObjects(lines);
+    if(lineHits.length){
+      const hit=lineHits[0];
+      const el=AST.find(el=>el.line===hit.object);
+      if(el) return el;
+    }
     return null;
   }
   let downOnCanvas=false;
