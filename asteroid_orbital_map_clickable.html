@@ -942,8 +942,25 @@
   // Announce readiness (with the actual asteroid roster, so the parent can pick
   // representative objects that really exist in the scene) and flush queued commands.
   function sendReady(){ reply('ready',{list:AST.map(el=>({n:el.ref.short_name,h:el.haz?1:0,ld:el.event.miss_distance_ld}))}); }
+
+  function applyUrlFocus(){
+    const qs=new URLSearchParams(location.search);
+    const name=qs.get('focus');
+    if(!name) return;
+    const el=AST_BY_NAME[name.toLowerCase()];
+    if(!el) return;
+    guided=qs.has('guided');
+    guidedTimeline=qs.has('timeline');
+    document.body.classList.toggle('guided',guided);
+    document.body.classList.toggle('timeline-on',guidedTimeline);
+    showChrome(!guided);
+    selectAst(el, qs.get('jump')!=='false');
+    preset(qs.get('preset')||'closeup');
+    if(qs.get('play')!=='0') setPlaying(true);
+  }
   sendReady();
   setTimeout(sendReady,300);   // belt-and-suspenders if parent bound late
+  applyUrlFocus();
 
   requestAnimationFrame(frame);
 })();
