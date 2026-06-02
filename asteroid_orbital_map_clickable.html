@@ -6,22 +6,23 @@
 <title>Near-Earth Asteroid Survey</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#04060f; --panel:rgba(9,12,24,0.72); --panel-solid:rgba(7,9,19,0.96);
     --line:rgba(255,255,255,0.12); --line-soft:rgba(255,255,255,0.06);
-    --ink:#eef1f8; --dim:rgba(238,241,248,0.55); --faint:rgba(238,241,248,0.34);
-    --amber:#ffc861; --cyan:#6fd3ff; --coral:#ff6b6b;
+    --ink:#f4f6fb; --dim:rgba(226,231,243,0.66); --faint:rgba(226,231,243,0.42);
+    --amber:#ffc861; --cyan:#7fd8ff; --coral:#ff7a72;
     --shadow:0 18px 50px rgba(0,0,0,0.55);
+    --serif:"Fraunces",Georgia,serif; --sans:"Hanken Grotesk",system-ui,sans-serif; --mono:"IBM Plex Mono",monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
-  body{background:var(--bg);font-family:"Space Mono",monospace;color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased;}
+  body{background:var(--bg);font-family:var(--mono);color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased;}
 
   #loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:18px;}
-  #loading .title{font-family:"Instrument Serif",serif;font-size:32px;letter-spacing:0.02em;font-style:italic;}
+  #loading .title{font-family:var(--serif);font-size:32px;letter-spacing:0.02em;font-style:italic;}
   #loadBar{width:240px;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;}
   #loadFill{height:100%;width:0%;background:var(--cyan);transition:width 0.35s ease;}
   #loadMsg{font-size:10.5px;color:var(--faint);letter-spacing:0.14em;text-transform:uppercase;}
@@ -32,7 +33,7 @@
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadow);}
 
   /* title — flush top-left */
-  #title{position:absolute;top:24px;left:24px;font-family:"Instrument Serif",serif;font-weight:400;
+  #title{position:absolute;top:24px;left:24px;font-family:var(--serif);font-weight:400;
     font-size:27px;line-height:1.05;letter-spacing:0.01em;pointer-events:none;
     opacity:0;animation:fade 0.9s 0.2s forwards;}
   #title em{font-style:italic;color:var(--cyan);}
@@ -42,7 +43,7 @@
     opacity:0;animation:fade 0.9s 0.35s forwards;}
   #searchBox{display:flex;align-items:center;gap:9px;padding:9px 13px;}
   #searchBox svg{flex-shrink:0;opacity:0.5;}
-  #search{flex:1;background:none;border:none;outline:none;color:var(--ink);font-family:"Space Mono",monospace;font-size:12px;}
+  #search{flex:1;background:none;border:none;outline:none;color:var(--ink);font-family:var(--mono);font-size:12px;}
   #search::placeholder{color:var(--faint);}
   #results{max-height:240px;overflow-y:auto;padding:5px;display:none;}
   #results.show{display:block;}
@@ -60,7 +61,7 @@
   /* view buttons — flush, below finder */
   #viewBtns{position:absolute;top:118px;right:24px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;
     opacity:0;animation:fade 0.9s 0.45s forwards;}
-  .vbtn{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+  .vbtn{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
     background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:7px 12px;cursor:pointer;
     transition:all 0.2s;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
   .vbtn:hover{border-color:var(--cyan);color:var(--ink);}
@@ -69,27 +70,29 @@
   .vbtn.zb{width:38px;text-align:center;font-size:15px;padding:5px 0;line-height:1;}
 
   /* selected-asteroid card — flush bottom-left */
-  #card{position:absolute;left:24px;bottom:24px;width:272px;padding:17px 19px;z-index:30;
+  #card{position:absolute;left:24px;bottom:24px;width:300px;padding:19px 21px;z-index:30;
     max-height:calc(100vh - 48px);overflow-y:auto;
     transform:translateY(14px);opacity:0;pointer-events:none;transition:opacity 0.4s,transform 0.4s cubic-bezier(0.22,1,0.36,1);}
   #card::-webkit-scrollbar{width:0;}
   /* in scroll-driven (guided) mode the left edge belongs to the narrative rail,
      so the selected-asteroid card docks on the right instead. */
   body.guided #card{left:auto;right:24px;}
+  body.embedded #title{display:none!important;}
   #card.show{opacity:1;transform:translateY(0);pointer-events:auto;}
-  #card .nm{font-family:"Instrument Serif",serif;font-size:25px;line-height:1.05;}
-  #card .badge{display:inline-block;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;vertical-align:middle;letter-spacing:0.05em;}
-  #card .cls{font-size:10px;color:var(--faint);letter-spacing:0.04em;margin:3px 0 14px;}
-  #card .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 14px;}
-  #card .k{font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:3px;}
-  #card .v{font-size:15px;line-height:1;} #card .v small{font-size:10px;color:var(--dim);}
-  #card .miss{grid-column:1/3;padding-top:11px;border-top:1px solid var(--line-soft);}
-  #card .miss .v{font-size:22px;color:var(--coral);} #card.safe .miss .v{color:var(--cyan);}
+  #card .nm{font-family:var(--serif);font-size:31px;line-height:1.05;margin-bottom:12px;}
+  #card .badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:20px;margin-left:7px;vertical-align:middle;letter-spacing:0.08em;}
+  #card .cls{display:none;}
+  #card .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  #card .k{display:none;}
+  #card .v{font-size:22px;line-height:1.15;color:var(--ink);} #card .v small{font-size:15px;color:var(--dim);}
+  #card .metric{border:1px solid var(--line-soft);border-radius:11px;padding:12px;background:rgba(255,255,255,0.025);}
+  #card .miss{grid-column:1/3;padding:13px;border:1px solid var(--line-soft);border-radius:11px;background:rgba(255,255,255,0.025);}
+  #card .miss .v{font-size:30px;color:var(--coral);} #card.safe .miss .v{color:var(--cyan);}
   #card .close{position:absolute;top:13px;right:14px;background:none;border:none;color:var(--faint);font-size:15px;cursor:pointer;line-height:1;}
   #card .close:hover{color:var(--ink);}
   /* per-asteroid threat assessment */
   #card .threat{margin-top:15px;padding-top:13px;border-top:1px solid var(--line-soft);}
-  #card .threat .k{margin-bottom:18px;color:var(--amber);}
+  #card .threat .k{display:block;font-family:var(--mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:18px;color:var(--amber);}
   #card .ladder{position:relative;height:26px;margin:0 4px 30px;}
   #card .ladder .bar{position:absolute;left:0;right:0;top:11px;height:3px;border-radius:3px;
     background:linear-gradient(90deg,rgba(111,211,255,0.5),rgba(255,200,97,0.6),rgba(255,107,107,0.85));}
@@ -97,23 +100,23 @@
     border:1px solid rgba(255,107,107,0.6);}
   #card .ladder .tier{position:absolute;top:5px;transform:translateX(-50%);}
   #card .ladder .tier span{display:block;width:1px;height:15px;margin:0 auto;background:rgba(255,255,255,0.35);}
-  #card .ladder .tier i{position:absolute;top:17px;left:50%;transform:translateX(-50%);font-style:normal;
-    font-size:7.5px;letter-spacing:0.04em;color:var(--faint);white-space:nowrap;}
+  #card .ladder .tier i{display:none;}
   #card .ladder .me{position:absolute;top:1px;transform:translateX(-50%);z-index:3;}
   #card .ladder .me::after{content:'';display:block;width:11px;height:11px;border-radius:50%;margin:0 auto;
     background:var(--cyan);box-shadow:0 0 10px var(--cyan);border:2px solid var(--bg);}
   #card .ladder .me.big::after{background:var(--coral);box-shadow:0 0 12px var(--coral);}
   #card .ladder .me b{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--ink);white-space:nowrap;font-weight:700;}
-  #card .verdict{font-size:10.5px;line-height:1.6;color:var(--dim);}
-  #card .verdict strong{color:var(--ink);font-weight:700;}
-  #card .verdict .safe{color:var(--cyan);} #card .verdict .warn{color:var(--coral);}
-  #card .verdict em{color:var(--amber);font-style:italic;}
+  #card .verdict{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  #card .mini{border:1px solid var(--line-soft);border-radius:10px;padding:9px;background:rgba(255,255,255,0.025);}
+  #card .mini .k{display:none;}
+  #card .mini svg{width:100%;height:70px;display:block;}
+  #card .mini .v2{font-size:18px;color:var(--ink);margin-top:8px;line-height:1.2;}
 
   /* time console — flush bottom-center */
   #console{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:min(720px,calc(100vw - 360px));
     min-width:380px;padding:15px 20px 16px;opacity:0;animation:fade 0.9s 0.5s forwards;}
   #ctop{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:11px;}
-  #bigDate{font-family:"Instrument Serif",serif;font-size:34px;line-height:0.95;letter-spacing:0.015em;}
+  #bigDate{font-family:var(--serif);font-size:34px;line-height:0.95;letter-spacing:0.015em;}
   #bigDate .yr{color:var(--amber);}
   #status{font-size:10px;color:var(--faint);margin-top:3px;min-height:13px;letter-spacing:0.04em;}
   #status .hot{color:var(--cyan);}
@@ -129,7 +132,7 @@
   #selTick::after{content:'closest';position:absolute;bottom:25px;left:50%;transform:translateX(-50%);
     font-size:8px;color:var(--amber);white-space:nowrap;}
   #transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .tbtn{font-family:"Space Mono",monospace;background:rgba(255,255,255,0.04);border:1px solid var(--line);
+  .tbtn{font-family:var(--mono);background:rgba(255,255,255,0.04);border:1px solid var(--line);
     color:var(--dim);border-radius:9px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;}
   .tbtn:hover{border-color:var(--cyan);color:var(--ink);}
   .tbtn.icon{width:36px;height:32px;font-size:12px;}
@@ -144,6 +147,29 @@
   #tip{position:absolute;pointer-events:none;background:var(--panel-solid);border:1px solid var(--line);
     border-radius:9px;padding:7px 11px;font-size:11px;display:none;max-width:200px;z-index:40;}
   #tip .s{color:var(--dim);font-size:10px;}
+  body.guided #tip{display:none!important;}
+
+  /* always-on floating label that tracks the focused asteroid in the scene */
+  #astLabel{position:absolute;pointer-events:none;display:none;z-index:42;white-space:nowrap;
+    transform:translate(-50%,-100%);padding:7px 13px;border-radius:30px;
+    background:rgba(7,9,19,0.82);border:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    font-family:var(--mono);font-size:11.5px;letter-spacing:0.03em;box-shadow:0 8px 26px rgba(0,0,0,0.5);}
+  #astLabel::after{content:"";position:absolute;left:50%;bottom:-5px;width:9px;height:9px;transform:translateX(-50%) rotate(45deg);
+    background:rgba(7,9,19,0.82);border-right:1px solid var(--line);border-bottom:1px solid var(--line);}
+  #astLabel .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;vertical-align:middle;
+    background:var(--cyan);box-shadow:0 0 9px var(--cyan);}
+  #astLabel .nm{color:var(--ink);font-weight:600;letter-spacing:0.05em;}
+  #astLabel .ld{color:var(--cyan);}
+  #astLabel.haz .pulse{background:var(--coral);box-shadow:0 0 9px var(--coral);}
+  #astLabel.haz .ld{color:var(--coral);}
+  #timeBadge{position:absolute;left:24px;bottom:24px;z-index:38;display:none;min-width:230px;
+    padding:12px 15px;border-radius:12px;background:rgba(7,9,19,0.74);border:1px solid var(--line);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 34px rgba(0,0,0,0.45);}
+  body.guided #timeBadge{display:block;}
+  #timeBadge .date{font-family:var(--serif);font-size:26px;line-height:1;color:#fff;}
+  #timeBadge .rate{display:none;}
+  #timeBadge .bar{height:3px;border-radius:3px;background:rgba(255,255,255,0.12);margin-top:10px;overflow:hidden;}
+  #timeBadge .bar i{display:block;height:100%;width:0;background:var(--cyan);border-radius:3px;}
 
   @keyframes fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
   #title{transform:none;} /* let fade handle it */
@@ -202,6 +228,8 @@
   </div>
 
   <div id="tip"></div>
+  <div id="astLabel"><span class="pulse"></span><span class="nm"></span><span class="ld"></span></div>
+  <div id="timeBadge"><div class="date" id="tbDate">—</div><div class="rate" id="tbRate">time moving</div><div class="bar"><i id="tbFill"></i></div></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -309,7 +337,7 @@
   const softTex=glowTex();
   function labelSprite(text,color,size){
     const cv=document.createElement('canvas');cv.width=256;cv.height=64;const ctx=cv.getContext('2d');
-    ctx.font='700 28px "Space Mono", monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='600 28px "IBM Plex Mono", monospace';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=8;ctx.fillStyle=color;ctx.fillText(text,128,34);
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,depthWrite:false,depthTest:false}));
     sp.scale.set(size,size*0.25,1);sp.renderOrder=20;return sp;
@@ -325,6 +353,19 @@
   const earthGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:softTex,color:0x8fd8ff,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,depthWrite:false}));
   earthGlow.scale.setScalar(0.62);scene.add(earthGlow);
   const earthLabel=labelSprite('EARTH','#cfeeff',0.9);scene.add(earthLabel);
+
+  // ── DISTANCE RINGS: concentric circles around Earth, in lunar distances, so the eye
+  //    can read how far out any pass really is. Spread wide to span the whole field. ──
+  const UNIT_PER_LD=AU/AU_TO_LD;
+  const earthRings=new THREE.Group(); scene.add(earthRings);
+  [50,100,200,350,500,750].forEach(ld=>{
+    const rad=ld*UNIT_PER_LD, seg=200, arr=new Float32Array((seg+1)*3);
+    for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;arr[i*3]=Math.cos(a)*rad;arr[i*3+1]=0;arr[i*3+2]=Math.sin(a)*rad;}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(arr,3));
+    const ring=new THREE.LineLoop(g,new THREE.LineBasicMaterial({color:0x7fd8ff,transparent:true,opacity:0.22}));
+    ring.frustumCulled=false; ring.userData.base=0.22; earthRings.add(ring);
+    const lab=labelSprite(ld+' LD','rgba(150,216,255,0.7)',0.6); lab.position.set(rad*0.7,0,rad*0.7); lab.userData.base=0.85; earthRings.add(lab);
+  });
 
   // ── SCALE CONTEXT: subtle Sun anchor + inner-planet orbit rings ─────────────
   // Built in heliocentric coords; each frame the whole group is shifted by
@@ -356,7 +397,7 @@
   scaleObjs.forEach(o=>o.visible=false);
 
   // ── ASTEROIDS: dots + time-fading white comet trails ────────────────────────
-  const HAZ_TINT=new THREE.Color(0xffb3a8), WHITE=new THREE.Color(0xdfe7f2), SEL_COL=new THREE.Color(0x9fe6ff);
+  const HAZ_TINT=new THREE.Color(0xff7d72), WHITE=new THREE.Color(0xdfe7f2), SEL_COL=new THREE.Color(0x9fe6ff), SEL_HAZ=new THREE.Color(0xff5a4d);
   const TRAIL_K=100;            // samples per trail
   const TRAIL_MIN_STEP=0.4;    // min sim-days between samples
 
@@ -422,6 +463,10 @@
   let theta=0.0, phi=0.12, zoomMul=1;            // phi small = top-down
   const DEFAULT_R=9;
   const camTarget=new THREE.Vector3();
+  const camTargetGoal=new THREE.Vector3();
+  let targetMode='earth';                 // 'earth' | 'sun' — what the camera frames
+  let astAlpha=1, astAlphaGoal=1;         // global fade for the asteroid swarm (intro reveal)
+  let ringsAlpha=1, ringsAlphaGoal=1;     // global fade for the distance rings
   let actR=DEFAULT_R, desR=DEFAULT_R;
   // Smooth camera tweening toward goal angles/zoom (driven by scroll presets).
   // Any direct user interaction cancels the tween so manual control wins.
@@ -474,24 +519,28 @@
     const tier=(v,l)=>`<div class="tier" style="left:${pos(v)}%"><span></span><i>${l}</i></div>`;
     const chic=`<div class="chic" style="left:${pos(10000)}%;width:${pos(15000)-pos(10000)}%"></div>`;
     const dotPct=pos(d);
-    const tellSize = d>=10000?'extinction-class in size'
-                    : d>=1000?'big enough for a global catastrophe'
-                    : d>=140?'a regional threat at worst'
-                    : 'too small to threaten more than a city';
-    const grow=(12000/Math.max(1,d));
-    const growTxt = d>=12000?'already past the dinosaur-killer size'
-                  : `~${grow<10?grow.toFixed(1):Math.round(grow)}× larger`;
     const kmMiss = ld*384400;
     const missTxt = kmMiss>=1e6?(kmMiss/1e6).toFixed(1)+'M km':Math.round(kmMiss).toLocaleString()+' km';
+    const sizePct=Math.max(4,Math.min(96,Math.sqrt(d/12000)*90));
+    const missArc=Math.max(18,Math.min(82,ld/20*70));
     return `<div class="threat">`+
-      `<div class="k">Would it end the world?</div>`+
+      `<div class="k">Size vs. impact</div>`+
       `<div class="ladder">${chic}`+
         `<div class="bar"></div>`+
         tier(140,'140m')+tier(1000,'1km')+tier(10000,'10km')+
         `<div class="me ${d>=10000?'big':''}" style="left:${dotPct}%"><b>${d>=1000?(d/1000).toFixed(1)+'km':Math.round(d)+'m'}</b></div>`+
       `</div>`+
-      `<div class="verdict">This rock is <strong>${tellSize}</strong> — but it <strong class="${ld<1?'warn':'safe'}">misses Earth by ${ld.toFixed(2)} LD (${missTxt})</strong>. `+
-      `To rival the dinosaur-killer it would need to be ${growTxt} <em>and</em> on a direct collision course. It is neither.</div>`+
+      `<div class="verdict">`+
+        `<div class="mini"><div class="k">Dinosaur-killer scale</div><svg viewBox="0 0 120 54" aria-hidden="true">`+
+          `<line x1="8" x2="112" y1="28" y2="28" stroke="rgba(255,255,255,.14)" stroke-width="7" stroke-linecap="round"/>`+
+          `<line x1="8" x2="${8+sizePct}" y1="28" y2="28" stroke="${d>=10000?'#ff7a72':'#7fd8ff'}" stroke-width="7" stroke-linecap="round"/>`+
+          `<circle cx="112" cy="28" r="6" fill="#ff7a72"/><text x="112" y="50" fill="rgba(226,231,243,.55)" font-size="7" text-anchor="middle">Chicxulub</text></svg>`+
+          `<div class="v2">${d>=1000?(d/1000).toFixed(1)+' km':Math.round(d)+' m'}</div></div>`+
+        `<div class="mini"><div class="k">Closest pass</div><svg viewBox="0 0 120 54" aria-hidden="true">`+
+          `<circle cx="60" cy="31" r="8" fill="#3d7fc4"/><path d="M 12 34 Q 60 ${34-missArc*.45} 108 34" fill="none" stroke="${ld<1?'#ff7a72':'#7fd8ff'}" stroke-width="2" stroke-dasharray="4 3"/>`+
+          `<circle cx="60" cy="${34-missArc*.22}" r="3.5" fill="${ld<1?'#ff7a72':'#7fd8ff'}"/></svg>`+
+          `<div class="v2">${ld.toFixed(2)} LD · ${missTxt}</div></div>`+
+      `</div>`+
     `</div>`;
   }
   function selectAst(el,jumpTime){
@@ -499,7 +548,14 @@
     selected=el;following=true;
     AST.forEach(o=>o.dim=true); el.dim=false;
     el.samp.length=0;el.lastSampJd=null;el.line.geometry.setDrawRange(0,0);
-    if(jumpTime!==false){ simJd=el.eventJd; setPlaying(false); clearTrails(); $('status').innerHTML=`<span class="hot">◉ FOLLOWING</span> ${el.ref.short_name} — press play to track it`; }
+    if(jumpTime!==false){
+      simJd=el.eventJd; setPlaying(false); clearTrails();
+      $('status').innerHTML=`<span class="hot">◉ FOLLOWING</span> ${el.ref.short_name} — press play to track it`;
+    } else if(el.ref.short_name==='Apophis'){
+      simJd=jdFromDateStr('2029-03-25'); clearTrails();
+    } else {
+      simJd=Math.max(START_JD,Math.min(END_JD,el.eventJd-45)); clearTrails();
+    }
     const tf=(el.eventJd-START_JD)/(END_JD-START_JD);
     selTick.style.left=(tf*100)+'%'; selTick.style.display='block';
     showCard(el);
@@ -586,7 +642,7 @@
   addEventListener('mousemove',e=>{
     if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;
     if(Math.abs(dx)>2||Math.abs(dy)>2){moved=true;camManual();}
-    theta-=dx*0.008;phi=Math.max(0.02,Math.min(Math.PI/2-0.02,phi+dy*0.008));
+    theta-=dx*0.008;phi=Math.max(0.02,Math.min(Math.PI/2-0.02,phi-dy*0.008));
     lastX=e.clientX;lastY=e.clientY;
   });
   const EMBEDDED = window.parent !== window;   // true when hosted in the scrollytelling page
@@ -605,7 +661,7 @@
   },{passive:false});
   canvas.addEventListener('touchmove',e=>{e.preventDefault();tMoved=true;camManual();
     if(e.touches.length===1&&dragging){const dx=e.touches[0].clientX-lastX,dy=e.touches[0].clientY-lastY;
-      theta-=dx*0.01;phi=Math.max(0.02,Math.min(Math.PI/2-0.02,phi+dy*0.01));lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;}
+      theta-=dx*0.01;phi=Math.max(0.02,Math.min(Math.PI/2-0.02,phi-dy*0.01));lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;}
     if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
       if(pinch>0)zoomMul=Math.max(0.18,Math.min(5,zoomMul*(pinch/d)));pinch=d;}
   },{passive:false});
@@ -615,7 +671,10 @@
   });
 
   const tip=$('tip');
+  const astLabelEl=$('astLabel'), astLabelNm=astLabelEl.querySelector('.nm'), astLabelLd=astLabelEl.querySelector('.ld');
+  const _proj=new THREE.Vector3();
   canvas.addEventListener('mousemove',e=>{
+    if(guided){tip.style.display='none';return;}
     if(dragging){tip.style.display='none';return;}
     const el=pickDot(e.clientX,e.clientY);
     if(el){const dm=el.ref.diameter_max_m, dia=dm>=1000?(dm/1000).toFixed(1)+' km':Math.round(dm)+' m';
@@ -636,7 +695,13 @@
   addEventListener('touchmove',e=>{if(scrubbing)scrubTo(e.touches[0].clientX);},{passive:true});
   addEventListener('touchend',()=>scrubbing=false);
 
-  addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();setPlaying(!playing);}});
+  addEventListener('keydown',e=>{
+    if(e.code==='Space'){e.preventDefault();setPlaying(!playing);}
+    // when embedded, forward up/down arrows so the narrative can step even while the
+    // pointer/focus is over the 3-D scene (keyboard accessibility).
+    else if(EMBEDDED&&(e.key==='ArrowDown'||e.key==='ArrowUp')){ e.preventDefault();
+      try{parent.postMessage({scene:true,type:'nav',key:e.key},'*');}catch(_){ } }
+  });
 
   // ════════════════════════════ MAIN LOOP (geocentric) ═══════════════════════
   // Everything is drawn in an Earth-centred frame: Earth is pinned at the origin
@@ -673,6 +738,16 @@
       }
     }
 
+    // intro choreography: fade the swarm + rings in/out, and slide the camera's focus
+    // between the Sun and Earth so the reveal feels progressive rather than abrupt.
+    astAlpha += (astAlphaGoal-astAlpha)*0.05;
+    ringsAlpha += (ringsAlphaGoal-ringsAlpha)*0.05;
+    dots.material.opacity=0.95*astAlpha;
+    earthRings.children.forEach(o=>{ o.material.opacity=(o.userData.base||0.2)*ringsAlpha; });
+    earthRings.visible=ringsAlpha>0.01;
+    if(targetMode==='sun') camTargetGoal.copy(earthHelio).multiplyScalar(-1);
+    else camTargetGoal.set(0,0,0);
+
     for(const el of AST){
       const sel=(el===selected);
       // When an asteroid is selected, isolate it: hide every other asteroid so
@@ -685,8 +760,11 @@
       el.line.visible=!spotOut;
       astPos.copy(posAt(el,simJd,AU)).sub(earthHelio);   // Earth-relative position
       dotPos[el.idx*3]=astPos.x;dotPos[el.idx*3+1]=astPos.y;dotPos[el.idx*3+2]=astPos.z;
-      const base=el.haz?HAZ_TINT:WHITE, tc=base;   // keep hazard/white colour even when selected
-      const b=sel?1.9:(spotOut?0.14:(SPOT?1.5:1.0));
+      // hazardous stays RED even when selected (a brightness boost used to wash it white);
+      // a focused hazardous rock glows a vivid red, a focused safe rock glows bright white.
+      let tc=el.haz?HAZ_TINT:WHITE, b;
+      if(sel){ if(el.haz){ tc=SEL_HAZ; b=1.05; } else b=1.9; }
+      else b=spotOut?0.14:(SPOT?1.5:1.0);
       dotCol[el.idx*3]=Math.min(1,tc.r*b);dotCol[el.idx*3+1]=Math.min(1,tc.g*b);dotCol[el.idx*3+2]=Math.min(1,tc.b*b);
       if(spotOut){ el.line.geometry.setDrawRange(0,0); continue; }   // dimmed: no trail
 
@@ -710,13 +788,18 @@
       }else el.line.geometry.setDrawRange(0,0);
     }
     dotGeo.attributes.position.needsUpdate=true;dotGeo.attributes.color.needsUpdate=true;
+    {const lo=0.9*Math.min(1,astAlpha); for(const el of AST) el.line.material.opacity=lo;}   // fade trails with the swarm during the intro
 
     // selected: emphasised ring + bright connector to Earth (origin) + live distance
     if(selected&&!selected.hidden){
       astPos.copy(posAt(selected,simJd,AU)).sub(earthHelio);
       selDist=astPos.length();                       // scene-units distance, for camera framing
       selRing.position.copy(astPos);selRing.quaternion.copy(camera.quaternion);
-      selRing.material.opacity=0.9;selRing.scale.setScalar(1+0.09*Math.sin(now*0.005));
+      // ring + connector match the asteroid's hazard colour (red when hazardous)
+      selRing.material.color.set(selected.haz?0xff5a4d:0x6fd3ff);
+      link.material.color.set(selected.haz?0xff7d72:0xffc861);
+      // ring scaled by camera distance → stays a small, constant on-screen size at any zoom
+      selRing.material.opacity=0.9;selRing.scale.setScalar(Math.max(0.02,actR*0.19)*(1+0.08*Math.sin(now*0.005)));
       const pa=link.geometry.attributes.position.array;
       pa[0]=astPos.x;pa[1]=astPos.y;pa[2]=astPos.z;pa[3]=0;pa[4]=0;pa[5]=0;
       link.geometry.attributes.position.needsUpdate=true;
@@ -724,10 +807,20 @@
       const distLd=astPos.length()/AU*AU_TO_LD;
       if($('card').classList.contains('show'))
         $('status').innerHTML=`<span class="hot">◉ FOLLOWING</span> ${selected.ref.short_name} · ${distLd.toFixed(1)} LD from Earth now`;
-      // emit a throttled live readout so the scrolling narrative can mirror it
+      // always-on floating label that tracks the asteroid on screen (replaces the old pill)
+      _proj.copy(astPos).project(camera);
+      if(_proj.z<1){
+        astLabelEl.style.display='block';
+        astLabelEl.classList.toggle('haz',!!selected.haz);
+        astLabelEl.style.left=((_proj.x*0.5+0.5)*innerWidth)+'px';
+        astLabelEl.style.top=((-_proj.y*0.5+0.5)*innerHeight - 16)+'px';
+        astLabelNm.textContent=selected.ref.short_name;
+        astLabelLd.textContent=' · '+(distLd<1?distLd.toFixed(2):distLd.toFixed(1))+' LD from Earth';
+      } else astLabelEl.style.display='none';
+      // still emit a throttled tick for any external listeners
       if(now-lastTick>110){ lastTick=now;
         reply('tick',{name:selected.ref.short_name, distLd:+distLd.toFixed(2), haz:selected.haz}); }
-    }else{selRing.material.opacity*=0.9;link.material.opacity*=0.9;}
+    }else{selRing.material.opacity*=0.9;link.material.opacity*=0.9;astLabelEl.style.display='none';}
 
     // smooth camera tweening toward scroll-driven goals (manual input cancels it)
     if(camTween){
@@ -739,7 +832,7 @@
 
     // camera — Earth locked at origin; following only adjusts zoom to keep both
     // the asteroid and Earth framed together.
-    camTarget.set(0,0,0);
+    camTarget.lerp(camTargetGoal,0.05);
     if(following&&selected&&!selected.hidden){
       // frame Earth + the asteroid wherever it actually is, so a focused object is
       // never tiny or off-screen regardless of its real distance.
@@ -752,6 +845,9 @@
     $('bigDate').innerHTML=fmtDate(simJd);
     const f=(simJd-START_JD)/(END_JD-START_JD);
     $('handle').style.left=(f*100)+'%';$('trackFill').style.width=(f*100)+'%';
+    $('tbDate').innerHTML=fmtDate(simJd);
+    $('tbRate').textContent=(playing?'playing · ':'paused · ')+SPEEDS[speedIdx].l+' / s';
+    $('tbFill').style.width=(f*100)+'%';
 
     renderer.render(scene,camera);
   }
@@ -780,13 +876,17 @@
   addEventListener('message',ev=>{
     const m=ev.data; if(!m||m.scene!==true||!m.type) return;   // only our own envelope
     switch(m.type){
-      case 'guide':   guided=!!m.on; showChrome(!guided); document.body.classList.toggle('guided',guided); break;
+      case 'guide':   guided=!!m.on; showChrome(!guided); document.body.classList.toggle('guided',guided); if(guided) tip.style.display='none'; break;
       case 'focus': {
         const el=AST_BY_NAME[(m.name||'').toLowerCase()];
         if(el){ selectAst(el, m.jump!==false); if(m.card===false) $('card').classList.remove('show'); if(m.preset) preset(m.preset); reply('focused',{name:el.ref.short_name}); }
         else reply('absent',{name:m.name});
         break; }
       case 'clearFocus': deselect(); break;
+      case 'scale':     showScale=!!m.on; $('btnScale').classList.toggle('on',showScale); scaleObjs.forEach(o=>o.visible=showScale); break;
+      case 'target':    targetMode=(m.to==='sun')?'sun':'earth'; break;
+      case 'rings':     ringsAlphaGoal=m.on?1:0; break;
+      case 'asteroids': astAlphaGoal=m.on?1:0; break;
       case 'filter':    setFilterKind(m.kind); break;
       case 'highlight': SPOT=(m.names&&m.names.length)?new Set(m.names):null; break;
       case 'camera':    preset(m.preset); break;

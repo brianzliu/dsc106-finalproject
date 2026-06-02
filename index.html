@@ -3,65 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sky Fell Once — Near-Earth Asteroids</title>
+    <title>Close Approaches — Earth's Nearest Asteroids</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-hexbin@0.2.2/build/d3-hexbin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tsparticles/all@3.5.0/tsparticles.all.bundle.min.js"></script>
     <style>
         :root{
             --bg:#04060f; --panel:#0a0d1a; --line:rgba(255,255,255,0.1);
-            --ink:#eef1f8; --dim:rgba(238,241,248,0.55); --faint:rgba(238,241,248,0.32);
-            --amber:#ffc861; --cyan:#6fd3ff; --coral:#ff6b6b; --ember:#ff8a3d;
+            --ink:#f4f6fb; --dim:rgba(226,231,243,0.82); --soft:rgba(226,231,243,0.62); --faint:rgba(226,231,243,0.42);
+            --amber:#ffc861; --cyan:#7fd8ff; --coral:#ff7a72; --ember:#ff8a3d;
+            --serif:"Fraunces",Georgia,"Times New Roman",serif;
+            --sans:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+            --mono:"IBM Plex Mono","SFMono-Regular",monospace;
         }
         *{box-sizing:border-box;}
         html{scroll-behavior:smooth;}
-        body{font-family:"Space Mono",monospace;background:var(--bg);color:var(--ink);margin:0;-webkit-font-smoothing:antialiased;}
-        h1,h2,h3{font-family:"Instrument Serif",serif;font-weight:400;}
+        body{font-family:var(--sans);background:var(--bg);color:var(--ink);margin:0;-webkit-font-smoothing:antialiased;
+            font-size:16px;line-height:1.6;letter-spacing:0.002em;}
+        h1,h2,h3{font-family:var(--serif);font-weight:400;}
         em{font-style:italic;}
 
         /* ─────────────────────── CINEMATIC HOOK ─────────────────────── */
         .hook{position:relative;width:100%;height:100vh;min-height:600px;overflow:hidden;
-            background:radial-gradient(120% 90% at 50% 8%,#0a1326 0%,#060a16 45%,#04060f 100%);}
-        #hookCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+            background:radial-gradient(130% 100% at 50% 30%,#0b1430 0%,#070c1c 42%,#04060f 100%);}
+        #hookParticles{position:absolute;inset:0;width:100%;height:100%;}
+        /* drifting aurora wash behind the stars */
+        .hook::after{content:"";position:absolute;inset:0;pointer-events:none;
+            background:radial-gradient(40% 55% at 22% 78%,rgba(127,216,255,0.10),transparent 70%),
+                       radial-gradient(45% 50% at 80% 18%,rgba(255,200,97,0.07),transparent 70%);
+            mix-blend-mode:screen;}
         .hook-layer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
-            justify-content:center;text-align:center;pointer-events:none;padding:0 24px;}
-        .hk-cap{position:absolute;top:13%;left:0;right:0;text-align:center;margin:0;font-weight:400;
-            font-family:"Instrument Serif",serif;font-size:clamp(30px,4.6vw,58px);line-height:1.05;color:var(--amber);
-            opacity:0;transform:translateY(14px);filter:blur(8px);
+            justify-content:center;text-align:center;pointer-events:none;padding:0 24px;z-index:2;}
+        .hk-eyebrow{position:absolute;top:13%;left:0;right:0;text-align:center;margin:0;
+            font-family:var(--mono);font-size:clamp(10px,1.1vw,12.5px);letter-spacing:0.42em;text-transform:uppercase;
+            color:var(--cyan);opacity:0;transform:translateY(10px);transition:opacity 1.1s ease,transform 1.1s cubic-bezier(0.22,1,0.36,1);}
+        .hk-eyebrow.show{opacity:0.85;transform:none;}
+        .hk-cap{position:absolute;top:50%;left:50%;width:min(980px,88vw);text-align:center;margin:0;font-weight:400;
+            font-family:var(--serif);font-size:clamp(30px,4.6vw,58px);line-height:1.08;color:#fff;letter-spacing:-0.01em;
+            opacity:0;transform:translate(-50%,calc(-50% + 16px));filter:blur(10px);
             transition:opacity 1.2s ease,transform 1.2s cubic-bezier(0.22,1,0.36,1),filter 1.2s ease;}
-        .hk-cap.show{opacity:0.95;transform:none;filter:blur(0);}
-        .hk-mid{font-style:italic;font-size:clamp(22px,3.4vw,40px);color:#ffd9c2;letter-spacing:0.01em;
-            opacity:0;transform:translateY(10px);transition:opacity 1s ease,transform 1s ease;max-width:680px;line-height:1.25;
-            text-shadow:0 0 40px rgba(255,138,61,0.4);font-family:"Instrument Serif",serif;}
-        .hk-mid.show{opacity:1;transform:none;}
-        .hk-q{opacity:0;transform:translateY(22px);filter:blur(10px);transition:opacity 1.5s ease,transform 1.5s cubic-bezier(0.22,1,0.36,1),filter 1.5s ease;max-width:860px;}
+        .hk-cap em{color:var(--amber);font-style:italic;}
+        .hk-cap.show{opacity:1;transform:translate(-50%,-50%);filter:blur(0);}
+        .hk-mid{position:absolute;top:50%;left:50%;width:min(780px,86vw);transform:translate(-50%,calc(-50% + 12px));
+            font-style:italic;font-size:clamp(22px,3.4vw,40px);color:#ffe6d4;letter-spacing:0;
+            opacity:0;transition:opacity 1s ease,transform 1s ease;line-height:1.3;
+            text-shadow:0 0 50px rgba(255,138,61,0.35);font-family:var(--serif);}
+        .hk-mid.show{opacity:1;transform:translate(-50%,-50%);}
+        .hk-q{opacity:0;transform:translateY(24px);filter:blur(12px);transition:opacity 1.5s ease,transform 1.5s cubic-bezier(0.22,1,0.36,1),filter 1.5s ease;max-width:920px;}
         .hk-q.show{opacity:1;transform:none;filter:blur(0);}
         .hk-q h1{animation:none;}
-        .hk-q.show h1{animation:hkrise 1.4s cubic-bezier(0.22,1,0.36,1) both;}
-        @keyframes hkrise{0%{letter-spacing:0.14em;opacity:0;}100%{letter-spacing:0.005em;opacity:1;}}
-        .hk-q .pre{font-size:12px;letter-spacing:0.06em;color:var(--dim);margin-bottom:20px;line-height:1.7;}
-        .hk-q h1{font-size:clamp(34px,6vw,72px);line-height:1.04;margin:0;letter-spacing:0.005em;}
-        .hk-q h1 em{color:var(--coral);}
-        .hk-q .sub{color:var(--dim);font-size:clamp(15px,1.5vw,18px);line-height:1.75;max-width:580px;margin:28px auto 0;}
-        .scrollcue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);text-align:center;
-            opacity:0;transition:opacity 1.2s ease;pointer-events:auto;cursor:pointer;}
-        .scrollcue.show{opacity:0.7;}
-        .scrollcue .t{font-size:9.5px;letter-spacing:0.3em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;}
-        .scrollcue .arrow{width:1px;height:34px;margin:0 auto;background:linear-gradient(var(--cyan),transparent);animation:cuepulse 1.8s ease-in-out infinite;}
+        .hk-q.show h1{animation:hkrise 1.5s cubic-bezier(0.22,1,0.36,1) both;}
+        @keyframes hkrise{0%{letter-spacing:0.1em;opacity:0;}100%{letter-spacing:-0.018em;opacity:1;}}
+        .hk-q h1{font-size:clamp(38px,6.0vw,78px);line-height:1.06;margin:0;letter-spacing:-0.018em;color:#fff;font-weight:500;}
+        .hk-q h1 em{color:var(--cyan);font-style:italic;font-weight:400;}
+        .hk-q .sub{display:none;}
+        .scrollcue{display:none;}
+        .scrollcue.show{display:none;}
+        .scrollcue .t{font-family:var(--mono);font-size:10px;letter-spacing:0.34em;text-transform:uppercase;color:var(--soft);}
+        .scrollcue .mouse{width:22px;height:34px;border:1.5px solid rgba(226,231,243,0.45);border-radius:12px;position:relative;}
+        .scrollcue .mouse::before{content:"";position:absolute;top:6px;left:50%;width:3px;height:7px;border-radius:3px;
+            background:var(--cyan);transform:translateX(-50%);animation:scrolldot 1.9s ease-in-out infinite;}
+        @keyframes scrolldot{0%{opacity:0;transform:translate(-50%,0);}30%{opacity:1;}80%{opacity:0;transform:translate(-50%,11px);}100%{opacity:0;}}
         @keyframes cuepulse{0%,100%{opacity:0.3;transform:scaleY(0.7);}50%{opacity:1;transform:scaleY(1);}}
         /* ─────────────────────── PROLOGUE (scroll-driven cinematic) ─────────────────────── */
-        .prologue{position:relative;z-index:3;height:340vh;background:#04060f;border-bottom:1px solid var(--line);}
+        .prologue{position:relative;z-index:3;height:560vh;background:#04060f;border-bottom:1px solid var(--line);}
         .pro-sticky{position:sticky;top:0;height:100vh;overflow:hidden;}
         #proCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
-        .pro-beats{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 8vw;pointer-events:none;}
+        .pro-beats{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 8vw;pointer-events:none;z-index:3;}
         .pro-text{position:absolute;max-width:780px;text-align:center;opacity:0;transform:translateY(16px);
             transition:opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1);}
         .pro-text.on{opacity:1;transform:none;}
-        .pro-text p{font-family:"Instrument Serif",serif;font-size:clamp(26px,3.6vw,46px);line-height:1.28;
+        .pro-text p{font-family:var(--serif);font-size:clamp(26px,3.6vw,46px);line-height:1.28;
             color:#eef1f8;margin:0 0 20px;text-shadow:0 2px 34px rgba(0,0,0,0.85);}
         .pro-text p strong{color:var(--amber);} .pro-text p em{color:var(--cyan);font-style:italic;}
-        .pro-text .pro-ans{font-family:"Space Mono",monospace;font-size:clamp(14px,1.4vw,17px);color:var(--dim);line-height:1.7;}
+        .pro-text p.pro-turn{font-family:var(--sans);font-size:clamp(15px,1.5vw,19px);line-height:1.65;color:var(--soft);
+            max-width:620px;margin:24px auto 0;font-weight:400;text-shadow:none;}
         .prologue-cue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);transition:opacity 0.6s ease;}
         .pcarrow{width:1px;height:30px;background:linear-gradient(var(--cyan),transparent);animation:cuepulse 1.8s ease-in-out infinite;}
 
@@ -70,47 +90,45 @@
         .stage{position:sticky;top:0;height:100vh;z-index:1;}
         .stage-left{position:absolute;left:0;top:0;width:34vw;height:100%;
             background:linear-gradient(180deg,#0a0e1b 0%,#070a14 100%);border-right:1px solid var(--line);}
-        .figure{position:absolute;right:0;top:0;width:66vw;height:100%;overflow:hidden;background:var(--bg);}
+        .figure{position:absolute;right:0;top:0;width:66vw;height:100%;overflow:hidden;background:var(--bg);transition:left 0.55s ease,width 0.55s ease;}
         .figure iframe{position:absolute;inset:0;width:100%;height:100%;border:none;display:block;}
+        .scrolly.charting .stage{z-index:6;}
+        .scrolly.charting .stage-left{opacity:0;}
+        .scrolly.charting .figure{left:0;right:auto;width:100vw;}
+        .scrolly.charting .steps{z-index:0;pointer-events:none;}
 
-        /* live readout pill (mirrors the scene's focused-object distance) */
-        .readout{position:absolute;top:26px;left:50%;transform:translateX(-50%);z-index:5;pointer-events:none;
-            display:flex;align-items:center;gap:11px;padding:9px 16px;border-radius:30px;
-            background:rgba(7,9,19,0.78);border:1px solid var(--line);backdrop-filter:blur(12px);
-            font-size:11.5px;letter-spacing:0.04em;opacity:0;transition:opacity 0.5s ease;white-space:nowrap;}
-        .readout.show{opacity:1;}
-        .readout .nm{color:var(--ink);font-weight:700;letter-spacing:0.08em;}
-        .readout .ld{color:var(--cyan);} .readout.haz .ld{color:var(--coral);}
-        .readout .pulse{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:rp 1.4s ease-in-out infinite;}
-        .readout.haz .pulse{background:var(--coral);box-shadow:0 0 10px var(--coral);}
-        @keyframes rp{0%,100%{opacity:0.4;}50%{opacity:1;}}
+        /* the 3-D scene fades away when a chart takes the stage */
+        .figure iframe{transition:opacity 0.6s ease;}
+        .figure.charting iframe{opacity:0;pointer-events:none;}
+        /* clean backdrop the charts sit on, so they never overlay the moving scene */
+        .chart-backdrop{position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;transition:opacity 0.6s ease;
+            background:radial-gradient(120% 100% at 50% 30%,#0a1124 0%,#070b18 55%,#04060f 100%);}
+        .figure.charting .chart-backdrop{opacity:1;}
+        /* "back to chart" pill — appears after a chart sends you into the live 3-D scene */
+        .chart-back{position:absolute;top:22px;left:50%;transform:translateX(-50%) translateY(-8px);z-index:6;
+            font-family:var(--mono);font-size:12px;letter-spacing:0.04em;color:var(--ink);cursor:pointer;
+            padding:9px 16px;border-radius:30px;background:rgba(9,12,22,0.82);border:1px solid var(--line);
+            backdrop-filter:blur(12px);opacity:0;pointer-events:none;transition:opacity 0.4s ease,transform 0.4s ease;}
+        .chart-back.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+        .chart-back:hover{border-color:var(--cyan);color:var(--cyan);}
 
-        /* persistent legend */
-        .legend{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:5;pointer-events:none;
-            display:flex;gap:18px;align-items:center;padding:9px 18px;border-radius:30px;flex-wrap:wrap;justify-content:center;
-            background:rgba(7,9,19,0.74);border:1px solid var(--line);backdrop-filter:blur(12px);
-            font-size:10.5px;color:var(--dim);letter-spacing:0.03em;opacity:0;transition:opacity 0.5s ease;max-width:92vw;}
-        .legend.on{opacity:1;}
-        .legend .li{display:flex;align-items:center;gap:7px;white-space:nowrap;}
-        .legend .sw{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-        .legend .sw.earth{background:#3d7fc4;box-shadow:0 0 7px #3d7fc4;}
-        .legend .sw.safe{background:#dfe7f2;box-shadow:0 0 7px rgba(223,231,242,0.55);}
-        .legend .sw.haz{background:var(--coral);box-shadow:0 0 7px var(--coral);}
-        .legend .sw.line{width:17px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#dfe7f2);}
-
-        /* overlay mount: chart / comparison / ladder panels, right side */
-        .ovl{position:absolute;z-index:4;top:50%;right:30px;transform:translate(28px,-50%);
-            width:min(440px,42vw);opacity:0;pointer-events:none;transition:opacity 0.55s ease,transform 0.55s cubic-bezier(0.22,1,0.36,1);}
-        .ovl.show{opacity:1;transform:translate(0,-50%);pointer-events:auto;}
-        .ovl .panel{background:rgba(9,12,22,0.9);border:1px solid var(--line);border-radius:16px;
-            padding:18px 18px 14px;backdrop-filter:blur(16px);box-shadow:0 20px 60px rgba(0,0,0,0.6);}
-        .ovl .otitle{font-family:"Instrument Serif",serif;font-size:21px;line-height:1.1;margin-bottom:12px;color:var(--ink);}
-        .ovl .ohead{font-family:"Instrument Serif",serif;font-size:19px;line-height:1.15;margin-bottom:3px;}
-        .ovl .osub{font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:12px;}
-        .ovl .ofoot{font-size:10.5px;color:var(--faint);line-height:1.55;margin-top:11px;}
-        .ovl .ofoot b{color:var(--coral);font-weight:400;}
-        @media(max-width:880px){.ovl{right:50%;transform:translate(50%,0);top:auto;bottom:18px;width:min(440px,92vw);}
-            .ovl.show{transform:translate(50%,0);} }
+        /* overlay mount: chart modes become the entire viewport, not bordered panels */
+        .ovl{position:absolute;z-index:4;inset:0;opacity:0;pointer-events:none;
+            transform:translateY(20px);transition:opacity 0.55s ease,transform 0.55s cubic-bezier(0.22,1,0.36,1);}
+        .ovl.show{opacity:1;transform:none;pointer-events:auto;}
+        .ovl .panel{height:100%;width:100%;background:none;border:none;border-radius:0;padding:clamp(26px,4vw,62px);
+            backdrop-filter:none;box-shadow:none;display:flex;flex-direction:column;justify-content:center;}
+        #ovlCmp .panel{display:grid;grid-template-rows:auto minmax(300px,1fr) auto auto;align-content:stretch;row-gap:24px;}
+        .ovl .otitle{font-family:var(--serif);font-size:clamp(28px,2.6vw,40px);line-height:1.06;margin-bottom:6px;color:#fff;letter-spacing:-0.015em;}
+        .ovl .ohead{font-family:var(--serif);font-size:20px;line-height:1.15;margin-bottom:3px;}
+        .ovl .osub{font-size:clamp(16px,1.25vw,20px);color:var(--soft);line-height:1.5;margin-bottom:20px;max-width:900px;}
+        .ovl .osub b{color:var(--cyan);font-weight:600;} .ovl .osub strong{color:var(--ink);font-weight:600;}
+        .ovl .ofoot{font-size:12px;color:var(--soft);line-height:1.6;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);}
+        .ovl .ofoot b{color:var(--cyan);font-weight:600;}
+        .ovl .ohint{display:none;}
+        .ovl .ohint b{color:var(--cyan);font-weight:500;}
+        .ovl svg{display:block;width:100%;height:min(68vh,720px);}
+        @media(max-width:880px){.ovl{width:94%;} }
 
         /* ─────────────────────── NARRATIVE STEPS (left rail) ─────────────────────── */
         .steps{position:relative;z-index:3;margin-top:-100vh;pointer-events:none;}
@@ -134,18 +152,18 @@
         .step.active .card > *:nth-child(3){transition-delay:0.30s;}
         .step.active .card > *:nth-child(4){transition-delay:0.40s;}
         .step.active .card > *:nth-child(5){transition-delay:0.50s;}
-        .step .n{font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--faint);margin-bottom:20px;
-            display:flex;align-items:center;gap:11px;}
+        .step .n{font-family:var(--mono);font-size:10.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px;
+            display:flex;align-items:center;gap:11px;opacity:0.85;}
         .step .n::before{content:"";width:26px;height:1px;background:var(--amber);}
-        .step h2{font-size:clamp(34px,3.5vw,54px);line-height:1.06;margin:0 0 24px;}
+        .step h2{font-size:clamp(34px,3.5vw,54px);line-height:1.06;margin:0 0 24px;letter-spacing:-0.015em;}
         .step h2 em{color:var(--cyan);} .step h2 .co{color:var(--coral);font-style:normal;}
-        .step p{color:var(--dim);font-size:clamp(15px,1.15vw,17px);line-height:1.95;margin:0 0 20px;}
+        .step p{color:var(--dim);font-size:clamp(15px,1.15vw,17px);line-height:1.8;margin:0 0 20px;}
         .step p:last-child{margin-bottom:0;}
         .step p strong{color:var(--ink);} .step p .hl{color:var(--amber);}
-        .step .big{font-family:"Instrument Serif",serif;font-size:52px;line-height:1;color:var(--cyan);margin:4px 0 2px;}
+        .step .big{font-family:var(--serif);font-size:52px;line-height:1;color:var(--cyan);margin:4px 0 2px;}
         .step .big.co{color:var(--coral);}
         .stat-row{display:flex;gap:26px;margin:22px 0 4px;flex-wrap:wrap;}
-        .stat-row .s .v{font-family:"Instrument Serif",serif;font-size:34px;line-height:1;}
+        .stat-row .s .v{font-family:var(--serif);font-size:34px;line-height:1;}
         .stat-row .s .v.cy{color:var(--cyan);} .stat-row .s .v.co{color:var(--coral);} .stat-row .s .v.am{color:var(--amber);}
         .stat-row .s .l{font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);margin-top:6px;line-height:1.5;}
         .cue{font-size:11.5px;color:var(--cyan);letter-spacing:0.03em;margin-top:24px;display:flex;align-items:center;gap:8px;}
@@ -157,40 +175,67 @@
         /* ─────────────────────── shared chart bits ─────────────────────── */
         .tooltip{position:fixed;text-align:left;padding:10px 12px;font-size:11.5px;background:rgba(7,9,19,0.97);color:#fff;
             border:1px solid var(--line);border-radius:8px;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:50;
-            font-family:"Space Mono",monospace;max-width:230px;}
-        .axis-label{fill:var(--dim);font-size:10.5px;letter-spacing:0.03em;}
-        .tick text{fill:var(--faint);font-family:"Space Mono",monospace;font-size:9.5px;}
+            font-family:var(--mono);max-width:260px;}
+        .tooltip.visual{padding:0;border-radius:12px;overflow:hidden;background:rgba(5,8,18,0.96);box-shadow:0 14px 40px rgba(0,0,0,0.55);}
+        .tipviz{width:310px;padding:13px;}
+        .tipviz svg{width:100%;height:160px;display:block;margin-bottom:8px;}
+        .tipviz .tbig{font-family:var(--serif);font-size:30px;line-height:1;color:#fff;}
+        .tipviz .tbig b{color:var(--cyan);font-weight:500;}
+        .tipviz .tline{display:none;}
+        .tipviz .chips{display:none;}
+        .tipviz .chipv{font-size:12px;color:var(--soft);border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:4px 8px;}
+        .tipviz .haz{color:var(--coral);}
+        .tipviz .orbit{stroke-dasharray:120;animation:dashfly 1.4s linear infinite;}
+        @keyframes dashfly{to{stroke-dashoffset:-240;}}
+        .keycue{position:fixed;left:50%;bottom:28px;transform:translate(-50%,12px);z-index:80;
+            font-family:var(--mono);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(226,231,243,0.74);
+            background:rgba(6,8,18,0.68);border:1px solid rgba(255,255,255,0.11);border-radius:999px;padding:8px 14px;backdrop-filter:blur(10px);
+            opacity:0;pointer-events:none;transition:opacity 0.8s ease,transform 0.8s cubic-bezier(0.22,1,0.36,1);}
+        .keycue.show{opacity:1;transform:translate(-50%,0);animation:keypulse 2.4s ease-in-out infinite 0.7s;}
+        body.in-scrolly .keycue{opacity:0;display:none;}
+        body.in-scrolly .keycue.show{opacity:0;display:none;}
+        .keycue b{color:var(--cyan);font-weight:600;}
+        @keyframes keypulse{0%,100%{box-shadow:0 0 0 rgba(127,216,255,0);}50%{box-shadow:0 0 24px rgba(127,216,255,0.16);}}
+        .axis-label{fill:var(--dim);font-size:24px;letter-spacing:0.01em;font-weight:600;}
+        .tick text{fill:var(--soft);font-family:var(--mono);font-size:20px;}
         .tick line,.domain{stroke:rgba(255,255,255,0.16);}
         .grid line{stroke:rgba(255,255,255,0.05);}
-        .annot{fill:var(--amber);font-size:9.5px;font-family:"Space Mono",monospace;}
+        .annot{fill:var(--amber);font-size:20px;font-family:var(--mono);font-weight:600;}
         .annot.co{fill:var(--coral);} .annot.cy{fill:var(--cyan);}
         .annot-line{stroke:var(--amber);stroke-dasharray:3 3;stroke-width:1;}
         .annot-line.co{stroke:var(--coral);} .annot-line.cy{stroke:var(--cyan);}
 
         /* comparison beat */
-        .cmp-row{display:flex;align-items:flex-end;gap:5px;height:150px;margin:6px 0 2px;justify-content:space-between;}
+        .cmp-row{display:flex;align-items:flex-end;gap:10px;height:100%;min-height:360px;margin:0;justify-content:space-between;}
         .cmp{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:default;position:relative;}
-        .cmp .disc{border-radius:50%;transition:all 0.6s cubic-bezier(0.22,1,0.36,1);}
-        .cmp .nm{font-size:11px;color:var(--dim);margin-top:10px;text-align:center;line-height:1.25;letter-spacing:0.02em;}
-        .cmp .dia{font-size:12.5px;color:var(--ink);font-weight:700;margin-top:3px;}
+        .cmp .disc{display:flex;align-items:flex-end;justify-content:center;transition:transform 0.5s cubic-bezier(0.22,1,0.36,1);}
+        .cmp.linked:hover .disc{transform:translateY(-3px) scale(1.05);}
+        .cmp .disc svg{display:block;overflow:visible;filter:drop-shadow(0 4px 14px rgba(0,0,0,0.5));}
+        .cmp .nm{font-family:var(--mono);font-size:16px;color:var(--soft);margin-top:18px;text-align:center;line-height:1.25;letter-spacing:0.02em;}
+        .cmp .dia{font-family:var(--mono);font-size:17px;color:var(--ink);font-weight:600;margin-top:5px;}
         .cmp.dino .nm,.cmp.dino .dia{color:var(--coral);}
         .cmp.linked{cursor:pointer;} .cmp.linked:hover .nm{color:var(--cyan);}
-        .cmp-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);}
-        .cmp-meta .mh{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--faint);margin-bottom:4px;}
-        .cmp-meta .mrow{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--dim);margin-top:8px;}
+        .cmp-meta{display:none;}
+        .cmp-meta .mh{font-family:var(--mono);font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:var(--cyan);margin-bottom:12px;font-weight:600;}
+        .cmp-meta .mrow{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:16px;color:var(--dim);margin-top:13px;}
         .cmp-meta .mrow .mval{color:var(--ink);}
-        .cmp-bar{height:5px;border-radius:3px;margin-top:4px;background:rgba(255,255,255,0.07);overflow:hidden;}
+        .cmp-bar{height:8px;border-radius:5px;margin-top:7px;background:rgba(255,255,255,0.07);overflow:hidden;}
         .cmp-bar i{display:block;height:100%;border-radius:3px;}
+        #ovlCmp .ofoot{font-size:21px;color:var(--dim);padding-top:18px;margin-top:24px;}
+        #apoMini .apo-path{stroke-dasharray:7 6;animation:dashfly 1.6s linear infinite;}
+        #apoMini .apo-dot{transform-box:fill-box;transform-origin:center;animation:apopulse 1.5s ease-in-out infinite;}
+        @keyframes apopulse{0%,100%{transform:scale(0.9);opacity:0.75;}50%{transform:scale(1.25);opacity:1;}}
 
         /* thresholds ladder */
-        .ladder{display:flex;flex-direction:column;gap:9px;margin:4px 0 2px;}
-        .rung{display:flex;align-items:center;gap:12px;}
-        .rung .lab{width:128px;font-size:10.5px;color:var(--dim);line-height:1.3;}
-        .rung .lab b{display:block;color:var(--ink);font-size:11.5px;}
-        .rung .meter{flex:1;height:22px;border-radius:5px;background:rgba(255,255,255,0.05);position:relative;overflow:hidden;}
-        .rung .meter i{position:absolute;left:0;top:0;height:100%;border-radius:5px;transition:width 0.9s cubic-bezier(0.22,1,0.36,1);}
-        .rung .cnt{font-family:"Instrument Serif",serif;font-size:17px;width:54px;text-align:right;}
-        .rung.zero .cnt{color:var(--cyan);} .rung.zero .meter i{background:rgba(111,211,255,0.5)!important;}
+        .ladder{display:flex;flex-direction:column;gap:16px;margin:10px 0 2px;}
+        .rung{display:flex;align-items:center;gap:18px;border-radius:10px;padding:4px 6px;transition:background 0.2s;}
+        .rung.linked{cursor:pointer;} .rung.linked:hover,.rung.zero:hover{background:rgba(255,255,255,0.04);}
+        .rung .lab{width:190px;font-size:13px;color:var(--soft);line-height:1.35;}
+        .rung .lab b{display:block;color:var(--ink);font-size:15px;margin-bottom:2px;}
+        .rung .meter{flex:1;height:30px;border-radius:7px;background:rgba(255,255,255,0.05);position:relative;overflow:hidden;}
+        .rung .meter i{position:absolute;left:0;top:0;height:100%;border-radius:7px;transition:width 0.9s cubic-bezier(0.22,1,0.36,1);}
+        .rung .cnt{font-family:var(--serif);font-size:26px;width:80px;text-align:right;}
+        .rung.zero .cnt{color:var(--cyan);} .rung.zero .meter i{background:rgba(127,216,255,0.5)!important;}
 
         /* ─────────────────────── WRITEUP / FOOTER ─────────────────────── */
         .closer{position:relative;z-index:3;background:var(--bg);border-top:1px solid var(--line);}
@@ -210,32 +255,30 @@
 
     <!-- ═══════════════════ THE HOOK ═══════════════════ -->
     <section class="hook" id="hook">
-        <canvas id="hookCanvas"></canvas>
+        <div id="hookParticles"></div>
         <div class="hook-layer">
-            <h2 class="hk-cap" id="hkCap">Sixty-six million years ago.</h2>
-            <div class="hk-mid" id="hkMid">A ten-kilometer asteroid found the Earth.</div>
+            <h2 class="hk-cap" id="hkCap">Sixty-six million years ago,<br>an asteroid <em>killed the dinosaurs</em>.</h2>
+            <div class="hk-mid" id="hkMid">A ten-kilometer rock struck Earth.<br>Three-quarters of life disappeared.</div>
             <div class="hk-q" id="hkQ">
-                <h1>It happened to them.<br>Should we be worried it<br><em>happens to us?</em></h1>
-                <div class="sub">An honest answer, drawn live from the orbits of 2,000 of Earth's nearest asteroids.</div>
+                <h1>It happened to <em>them</em>.<br>Should we be worried<br>it happens to <em>us?</em></h1>
             </div>
         </div>
-        <div class="scrollcue" id="scrollCue"><div class="t">Scroll</div><div class="arrow"></div></div>
     </section>
 
-    <!-- ═══════════════════ PROLOGUE (scroll-driven cinematic) ═══════════════════ -->
+    <!-- ═══════════════════ PROLOGUE (scroll-driven 3-D cinematic) ═══════════════════ -->
     <section class="prologue" id="prologue">
         <div class="pro-sticky">
             <canvas id="proCanvas"></canvas>
             <div class="pro-beats">
                 <div class="pro-text on" id="pb0">
-                    <p>An asteroid ten kilometers across struck the Yucatán with the force of <strong>billions of nuclear weapons</strong>.</p>
+                    <p>Picture it. A mountain of rock moving <strong>twenty kilometers a second</strong> slams into the shallow sea off the Yucatán.</p>
                 </div>
                 <div class="pro-text" id="pb1">
-                    <p>It drew a veil of soot across the sky and blotted out the Sun for years. <strong>Three-quarters of all species</strong> vanished — the dinosaurs among them.</p>
+                    <p>The strike sends dust and soot through the atmosphere. Sunlight fades, temperatures fall, and ecosystems collapse over the years that follow.</p>
                 </div>
                 <div class="pro-text" id="pb2">
-                    <p>The sky, once, fell. So the question is fair — <em>could it happen to us?</em></p>
-                    <p class="pro-ans">Here is the honest answer, drawn from the orbits of 2,000 real asteroids.</p>
+                    <p>The difference now is observation. <em>We can measure the sky.</em></p>
+                    <p class="pro-turn">The rest of this story follows the asteroids whose orbits bring them near Earth, then asks how close, how large, and how concerning they really are.</p>
                 </div>
             </div>
             <div class="prologue-cue" id="proCue"><div class="pcarrow"></div></div>
@@ -248,28 +291,34 @@
             <div class="stage-left"></div>
             <div class="figure" id="figure">
                 <iframe id="scene" src="asteroid_orbital_map_clickable.html" title="Live near-Earth asteroid scene"></iframe>
-                <div class="readout" id="readout"><span class="pulse"></span><span class="nm" id="roName"></span><span class="ld" id="roLd"></span></div>
+                <div class="chart-backdrop"></div>
+                <button class="chart-back" id="chartBack">◂ Back to chart</button>
 
-                <!-- overlay panels (one shown per relevant step) -->
+                <!-- overlay panels (one shown per relevant step) — these REPLACE the scene -->
                 <div class="ovl" id="ovlHist"><div class="panel">
-                    <div class="otitle">How far they miss</div>
+                    <div class="otitle">Almost everything misses by a wide margin</div>
+                    <div class="osub">Closest passes this century, measured in <b>LD</b>. The median pass is <strong>79 LD</strong>; the Moon is marked in red.</div>
                     <div id="histChart"></div>
                 </div></div>
 
                 <div class="ovl" id="ovlScatter"><div class="panel">
-                    <div class="otitle">Size vs. how close</div>
+                    <div class="otitle">The big asteroids never come close</div>
+                    <div class="osub"><b>Diameter</b> is vertical; <b>closest pass</b> is horizontal. The large-and-near corner remains empty.</div>
                     <div id="scatterChart"></div>
                 </div></div>
 
                 <div class="ovl" id="ovlThresh"><div class="panel">
-                    <div class="otitle">How many clear each bar</div>
+                    <div class="otitle">Size is common; collision paths are not</div>
+                    <div class="osub">Many objects are large enough to matter locally. Only 11 approach Chicxulub scale, and none are on a collision course.</div>
                     <div class="ladder" id="ladder"></div>
                 </div></div>
 
                 <div class="ovl" id="ovlCmp"><div class="panel">
-                    <div class="otitle">To scale</div>
+                    <div class="otitle">Comparing size, speed, and distance</div>
+                    <div class="osub">These reference asteroids separate the pieces of risk: size, velocity, and whether the path actually meets Earth.</div>
                     <div class="cmp-row" id="cmpRow"></div>
                     <div class="cmp-meta" id="cmpMeta"></div>
+                    <div class="ofoot"><b>LD</b> = lunar distance (384,400&nbsp;km).</div>
                 </div></div>
             </div>
         </div>
@@ -277,55 +326,67 @@
         <!-- narrative steps (left column) -->
         <div class="steps" id="steps">
 
+            <section class="step" data-step="bearings"><div class="card">
+                <h2>First, get your <em>bearings</em>.</h2>
+                <p>This is our corner of the solar system — the <span class="hl">Sun</span>, the inner planets, and the pale blue marble we call home. Everything orbits together in the same flat plane.</p>
+                <p>Keep track of <strong>Earth</strong>, the blue point in the scene. The planets will fade out next, leaving the asteroids whose paths come near our orbit.</p>
+            </div></section>
+
             <section class="step" data-step="primerOne"><div class="card">
                 <h2>Start with <em>one</em>.</h2>
-                <p>That single glowing point is <strong>one asteroid</strong> — a real rock in a real orbit. <strong>Earth</strong> is the blue sphere at the center, and the faint tail is the asteroid's path <strong>relative to us</strong>.</p>
+                <p>That glowing point is <strong>one asteroid</strong> on a real orbit. The tail shows its motion relative to <strong>Earth</strong>, and the faint rings give distance in lunar distances.</p>
             </div></section>
 
             <section class="step" data-step="primerHaz"><div class="card">
                 <h2>When one glows <span class="co">red</span>…</h2>
-                <p>…it's flagged <strong class="co">potentially hazardous</strong> — big enough and close enough in orbit to be worth watching. Hold that thought. It is the most misunderstood word in this whole story.</p>
+                <p>…it has been flagged <strong class="co">potentially hazardous</strong>. The label means it is large enough and its orbit is close enough to Earth’s orbit to deserve routine monitoring.</p>
             </div></section>
 
             <section class="step" data-step="population"><div class="card">
                 <h2>Now meet all <em>2,000</em> of them.</h2>
-                <p>Every dot is one near-Earth asteroid, each on its true orbit, all swirling around the Earth at the center. This is the entire neighborhood — the population we're about to put on trial.</p>
+                <p>Every dot is one near-Earth asteroid, shown in motion relative to Earth. This is the population we will compare by distance, size, and trajectory.</p>
             </div></section>
 
             <section class="step" data-step="hazardous"><div class="card">
                 <h2><span class="co">533</span> of them wear that red label.</h2>
-                <p>More than a quarter of the population. It sounds like a verdict — but it's only a <strong>watch-list rule</strong>: bigger than ~140&nbsp;m, and orbit passing within 0.05&nbsp;AU of ours.</p>
-                <p>It means <span class="hl">worth tracking</span> — not <em>predicted to hit</em>. Watch the red trails. Every one bends <strong>past</strong> Earth.</p>
+                <p>That is more than a quarter of the catalog. The definition is practical: roughly larger than 140&nbsp;m, with an orbit that passes within 0.05&nbsp;AU of Earth’s orbit.</p>
+                <p>In other words, the red label means <span class="hl">worth tracking</span>. It does not mean the asteroid is expected to hit Earth.</p>
             </div></section>
 
             <section class="step" data-step="distribution"><div class="card">
                 <h2>And "close" is an <em>astronomical</em> word.</h2>
                 <p>Across 13,691 approaches this century, the typical one misses by <span class="hl">79 lunar distances</span> — nearly 79 times farther than the Moon.</p>
-                <p>The chart on the right is that whole distribution. Sweep across its bars and the matching asteroids light up in orbit. Almost everything lives far, far out.</p>
+                <p>The chart on the right shows the distribution. Sweep across the bars to see how each distance band would pass Earth.</p>
             </div></section>
 
             <section class="step" data-step="size"><div class="card">
                 <h2>The close ones are <em>small</em>.</h2>
-                <p>A dinosaur-scale strike needs a rock that is both huge <strong>and</strong> on our doorstep. Plot size against closest pass, and that corner is simply <strong>empty</strong>.</p>
-                <p>The true giants — <strong>Ganymed</strong>, <strong>Eros</strong> — sit far to the right, never approaching. Click any point and the scene flies to it.</p>
+                <p>A dinosaur-scale strike would require both a very large object and a path that reaches Earth. Plotting those two variables together shows that the catalog does not contain that combination.</p>
+                <p>The largest objects sit far from Earth on this plot, while the closest passers are much smaller.</p>
             </div></section>
 
             <section class="step" data-step="thresholds"><div class="card">
                 <h2>So what would it actually <em>take</em>?</h2>
-                <p>Nearly every one of them is big enough to flatten a city. About <strong>1,286</strong> could threaten a civilization. Just <span class="hl">11</span> match the dinosaur-killer in size.</p>
-                <p>Size is only one bar, though. The bar that matters — <strong class="co">an actual collision course</strong> — is one that <span class="hl">none</span> of the 2,000 clear.</p>
+                <p>Many objects are large enough to cause regional damage, and a smaller number are large enough to have global consequences.</p>
+                <p>The last threshold is different: an actual collision course. None of the 2,000 objects in this view clear that bar.</p>
             </div></section>
 
             <section class="step" data-step="chicxulub"><div class="card">
                 <h2>We even host rocks <span class="co">bigger</span> than the dinosaur-killer.</h2>
-                <p><strong>Ganymed</strong> is ~87&nbsp;km — seven times Chicxulub — and never crosses our path. Of the ones that <em>do</em> come near, the largest is <strong>Florence</strong> at ~9&nbsp;km, missing by 7.5&nbsp;million&nbsp;km.</p>
-                <p>The dinosaur-killer stands alone — bigger than the close ones, closer than the big ones, and the only one that ever actually hit.</p>
+                <p><strong>Ganymed</strong> is about 87&nbsp;km across, far larger than Chicxulub, but its closest pass remains distant. <strong>Florence</strong> is smaller and closer, yet still misses by millions of kilometers.</p>
+                <p>The comparison separates the ingredients of impact risk: a large object, a close approach, and a path that intersects Earth.</p>
+            </div></section>
+
+            <section class="step" data-step="apophisContext"><div class="card">
+                <h2>One asteroid became the public test case.</h2>
+                <p><strong>Apophis</strong> was discovered in 2004. Early measurements left a narrow uncertainty corridor that passed through Earth in 2029.</p>
+                <p>Additional observations narrowed the orbit. As the uncertainty shrank, Apophis became a useful example of how planetary defense works: measure first, update the orbit, and revise the risk.</p>
             </div></section>
 
             <section class="step" data-step="apophis"><div class="card">
                 <h2>Which brings us to <em>Apophis</em>.</h2>
-                <p>In 2004 it earned the highest impact odds ever recorded — about 2.7% for 2029. Then more data arrived, the orbit tightened, and the odds for the next century fell to <span class="hl">zero</span>.</p>
-                <p>On <strong>13 April 2029</strong> it still sweeps just <strong class="co">38,000&nbsp;km</strong> past Earth — closer than our own satellites, bright enough to see by eye. Watch the distance fall, then climb away.</p>
+                <p>In 2004, early estimates gave Apophis unusually high impact odds for 2029. With more data, the 2029 risk disappeared, and later measurements ruled out an impact for the next century.</p>
+                <p>On <strong>13 April 2029</strong>, it will still pass about <strong class="co">38,000&nbsp;km</strong> from Earth. The scene follows that close pass as the distance falls and then grows again.</p>
                 <div class="apo-inset">
                     <svg id="apoMini" viewBox="0 0 460 280" role="img" aria-label="Apophis 2029 pass, to scale"></svg>
                 </div>
@@ -333,8 +394,8 @@
 
             <section class="step" data-step="explore"><div class="card">
                 <h2>Now interrogate the sky <em>yourself</em>.</h2>
-                <p>The full controls are back. <strong>Search</strong> Apophis and follow it. <strong>Filter</strong> to the 533 hazardous and watch every trail miss. <strong>Click</strong> any asteroid for its own "would it end the world?" verdict.</p>
-                <p>The dinosaurs never had this. We do — and so far, every rock we've measured is just passing through.</p>
+                <p>The full controls are back. Search for an asteroid, filter the catalog, or follow one object through time.</p>
+                <p>The main pattern remains the same: the catalog contains many close approaches, but the measured paths pass Earth rather than intersecting it.</p>
             </div></section>
 
         </div>
@@ -344,8 +405,8 @@
     <div class="closer">
         <div class="writeup">
             <h2>So — should we be worried?</h2>
-            <div class="sub">The honest, data-backed answer.</div>
-            <p>The dinosaurs never saw it coming. We have catalogued 2,000 of our nearest neighbors, projected ~42,000 of their encounters with Earth, and found a population that misses us by a median of 79 lunar distances — whose giants stay away and whose close passers stay small. The one object that ever truly scared us, Apophis, we de-escalated from record-setting threat to naked-eye spectacle using nothing but patience and better data. The sky fell once. We are now very sure we'll see it coming if it ever tries again.</p>
+            <div class="sub">The data-backed answer.</div>
+            <p>The catalog is not a guarantee that impacts are impossible. It is a measurement system. In this sample of 2,000 near-Earth asteroids, the projected close approaches miss by a median of 79 lunar distances. The largest objects stay distant, the closest passers are small, and Apophis shows why repeated observations matter: better measurements can turn an early concern into a well-understood flyby.</p>
 
             <div class="divider"></div>
 
@@ -355,180 +416,176 @@
             <p><strong>2. What will be the most challenging part of your project to design and why?</strong></p>
             <p>The hardest part is the seamless coupling between the scrolling 2-D narrative and the live 3-D scene: propagating thousands of orbits every frame without dropping frames, choreographing camera transitions from a macro view down to a single close approach, and keeping the simulation clock, the chart overlays, and the live annotations all in sync as the reader scrolls. Keeping the user oriented through those dynamic, scroll-driven camera moves is the central UX challenge, and it has taken heavy iteration.</p>
         </div>
-        <footer>NASA Near-Earth Object data · JPL Small-Body Database · Three.js + D3 · <a href="NARRATIVE.md">Read the full written narrative →</a></footer>
+        <footer>NASA Near-Earth Object data · JPL Small-Body Database · Three.js · tsParticles · D3 · <a href="NARRATIVE.md">Read the full written narrative →</a></footer>
     </div>
 
     <div class="tooltip" id="tooltip"></div>
+    <div class="keycue" id="keyCue">Scroll or press <b>↓</b></div>
 
     <script>
-    /* ════════════════════════ HOOK CINEMATIC ════════════════════════ */
+    /* ════════════════════════ HOOK — tsParticles starfield + staged reveal ════════════════════════ */
     (function(){
-        const canvas=document.getElementById('hookCanvas'),ctx=canvas.getContext('2d');
-        let W,H,DPR=Math.min(window.devicePixelRatio||1,2),stars=[],embers=[];
-        function resize(){W=canvas.clientWidth;H=canvas.clientHeight;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);buildStars();}
-        function buildStars(){stars=[];const n=Math.floor(W*H/6500);for(let i=0;i<n;i++)stars.push({x:Math.random()*W,y:Math.random()*H*0.82,r:Math.random()*1.3+0.2,tw:Math.random()*6.28,sp:0.6+Math.random()*1.6});}
-        function ridge(x){return Math.sin(x*0.011)*16+Math.sin(x*0.037+1.3)*9+Math.sin(x*0.003)*22;}
-        const T={cap:400,mid:2300,strikeStart:3600,impact:5050,qShow:6700,cueShow:7600,total:8200};
-        let start=null,impactX,impactY;
-        const hkCap=document.getElementById('hkCap'),hkMid=document.getElementById('hkMid'),hkQ=document.getElementById('hkQ'),scrollCue=document.getElementById('scrollCue');
-        function reveal(t){if(t>T.cap)hkCap.classList.add('show');if(t>T.mid)hkMid.classList.add('show');
-            if(t>T.strikeStart+200){hkCap.classList.remove('show');hkMid.classList.remove('show');}
-            if(t>T.qShow)hkQ.classList.add('show');if(t>T.cueShow)scrollCue.classList.add('show');}
-        function draw(now){
-            if(start===null){start=now;impactX=W*0.5;impactY=H*0.74;}
-            const t=now-start;ctx.clearRect(0,0,W,H);
-            const flash=t>T.impact?Math.max(0,1-(t-T.impact)/1400):0;
-            for(const s of stars){const a=0.35+0.55*Math.abs(Math.sin(s.tw+now*0.001*s.sp));ctx.globalAlpha=a*(1-flash*0.7);ctx.fillStyle='#dfe9ff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.fill();}
-            ctx.globalAlpha=1;
-            if(t>T.strikeStart&&t<T.impact+60){
-                const p=(t-T.strikeStart)/(T.impact-T.strikeStart),sx=W*0.92,sy=-40;
-                const ax=sx+(impactX-sx)*p,ay=sy+(impactY-sy)*p,tl=230;
-                const L=Math.hypot(sx-impactX,sy-impactY),tx=ax+(sx-impactX)/L*tl,ty=ay+(sy-impactY)/L*tl;
-                const g=ctx.createLinearGradient(ax,ay,tx,ty);g.addColorStop(0,'rgba(255,240,210,0.95)');g.addColorStop(0.25,'rgba(255,138,61,0.7)');g.addColorStop(1,'rgba(255,80,40,0)');
-                ctx.strokeStyle=g;ctx.lineWidth=3.2+5*p;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(tx,ty);ctx.stroke();
-                const hr=4+7*p,hg=ctx.createRadialGradient(ax,ay,0,ax,ay,hr*3);hg.addColorStop(0,'#fff');hg.addColorStop(0.4,'#ffd29a');hg.addColorStop(1,'rgba(255,138,61,0)');
-                ctx.fillStyle=hg;ctx.beginPath();ctx.arc(ax,ay,hr*3,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ax,ay,hr,0,7);ctx.fill();
-            }
-            if(t>T.impact){const e=t-T.impact;
-                if(flash>0){const fg=ctx.createRadialGradient(impactX,impactY,0,impactX,impactY,Math.max(W,H)*1.1);fg.addColorStop(0,`rgba(255,250,235,${0.95*flash})`);fg.addColorStop(0.3,`rgba(255,180,110,${0.6*flash})`);fg.addColorStop(1,'rgba(255,90,40,0)');ctx.fillStyle=fg;ctx.fillRect(0,0,W,H);}
-                const sw=e/900;if(sw<1.6){ctx.globalAlpha=Math.max(0,0.6-sw*0.4);ctx.strokeStyle='#ffd9a0';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(impactX,impactY,sw*W*0.5,sw*W*0.16,0,Math.PI,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
-                if(embers.length<90&&e<1600&&Math.random()<0.6)embers.push({x:impactX+(Math.random()-0.5)*40,y:impactY,vx:(Math.random()-0.5)*2.2,vy:-(1.5+Math.random()*3.5),life:1,r:1+Math.random()*2});
-            }
-            for(const m of embers){m.x+=m.vx;m.y+=m.vy;m.vy+=0.018;m.life-=0.006;ctx.globalAlpha=Math.max(0,m.life)*0.9;ctx.fillStyle=m.life>0.5?'#ffd9a0':'#ff6b3d';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,7);ctx.fill();}
-            embers=embers.filter(m=>m.life>0&&m.y<H+20);ctx.globalAlpha=1;
-            const settle=t>T.impact?Math.min(1,(t-T.impact)/1600):0,baseY=H*0.78;
-            ctx.beginPath();ctx.moveTo(0,H);for(let x=0;x<=W;x+=6)ctx.lineTo(x,baseY-ridge(x));ctx.lineTo(W,H);ctx.closePath();
-            ctx.fillStyle=`rgb(${4+settle*6},${6+settle*4},15)`;ctx.fill();
-            if(t>T.impact){const gg=ctx.createLinearGradient(0,baseY-40,0,baseY+10);gg.addColorStop(0,'rgba(255,120,60,0)');gg.addColorStop(1,`rgba(255,110,50,${0.18*Math.max(0,1-(t-T.impact)/3500)})`);ctx.fillStyle=gg;ctx.fillRect(0,baseY-40,W,60);}
-            reveal(t);if(t<T.total+4000)requestAnimationFrame(draw);
-        }
-        scrollCue.addEventListener('click',()=>document.querySelector('.prologue').scrollIntoView({behavior:'smooth'}));
-        addEventListener('resize',resize);resize();requestAnimationFrame(draw);
+        const hkCap=document.getElementById('hkCap'),
+              hkMid=document.getElementById('hkMid'),hkQ=document.getElementById('hkQ'),
+              keyCue=document.getElementById('keyCue');
+        // staged cinematic reveal of the headline beats; only one layer is visible
+        // at a time so the large display type never overlaps.
+        setTimeout(()=>hkCap.classList.add('show'),800);
+        setTimeout(()=>hkCap.classList.remove('show'),2800);
+        setTimeout(()=>hkMid.classList.add('show'),3400);
+        setTimeout(()=>hkMid.classList.remove('show'),5400);
+        setTimeout(()=>hkQ.classList.add('show'),6000);
+        setTimeout(()=>keyCue.classList.add('show'),6900);
+
+        if(!window.tsParticles) return;
+        tsParticles.load({ id:'hookParticles', options:{
+            fullScreen:{enable:false},
+            background:{color:'transparent'},
+            fpsLimit:60, detectRetina:true,
+            particles:{
+                number:{value:200,density:{enable:true,area:900}},
+                color:{value:['#ffffff','#bcd4ff','#ffe7c4','#9fd8ff','#ffd9a8']},
+                shape:{type:'circle'},
+                opacity:{value:{min:0.12,max:0.95},animation:{enable:true,speed:0.6,sync:false,startValue:'random'}},
+                size:{value:{min:0.4,max:1.9}},
+                move:{enable:true,speed:0.16,direction:'none',random:true,straight:false,outModes:{default:'out'}},
+            },
+            interactivity:{
+                detectsOn:'window',
+                events:{ onHover:{ enable:true, mode:[], parallax:{enable:true,force:34,smooth:22} } },
+            },
+        }});
     })();
 
-    /* ════════════════════════ PROLOGUE CINEMATIC (scroll-driven) ════════════════════════
-       A pinned canvas that evolves with scroll: a globe of the Americas with the Yucatán
-       marked → an asteroid strikes it (flash + ejecta) → the sky is blotted out by soot →
-       the long winter clears to a cold, scarred Earth. Three text beats fade through. */
+    /* ════════════════════════ PROLOGUE — three.js scroll-driven cinematic ════════════════════════
+       A pinned WebGL scene that evolves with scroll: a real 3-D Earth turning under the stars →
+       a rocky asteroid streaks in and strikes → a blinding flash → a soot veil and impact winter
+       darken the world → the long winter clears. Three text beats fade through. */
     (function(){
         const sec=document.getElementById('prologue'), cv=document.getElementById('proCanvas');
-        if(!sec||!cv) return;
-        const ctx=cv.getContext('2d'); let W,H,DPR=Math.min(devicePixelRatio||1,2), stars=[], ash=[];
-        const IMPACT=0.18;                    // scroll-progress at which the asteroid hits
-        // stylized Americas (normalized to globe radius) + the Yucatán impact site
-        const LAND=[
-            {x:-0.30,y:-0.50,rx:0.40,ry:0.30},{x:-0.04,y:-0.34,rx:0.34,ry:0.30},{x:-0.52,y:-0.32,rx:0.22,ry:0.18},
-            {x:-0.16,y:-0.07,rx:0.18,ry:0.11},{x:0.00,y:0.06,rx:0.12,ry:0.10},
-            {x:0.14,y:0.48,rx:0.26,ry:0.40},{x:0.04,y:0.26,rx:0.21,ry:0.20}
-        ];
-        const YUC={x:-0.16,y:-0.10};          // Yucatán / Gulf of Mexico
-        function resize(){
-            W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
-            stars=[];for(let i=0;i<Math.floor(W*H/7000);i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.2,tw:Math.random()*6.28});
-            ash=[];for(let i=0;i<160;i++)ash.push({x:Math.random()*W,y:Math.random()*H,r:1+Math.random()*2.8,sp:0.25+Math.random()*0.9,dx:(Math.random()-0.5)*0.4});
+        if(!sec||!cv||!window.THREE) return;
+        let renderer;
+        try{ renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true}); }
+        catch(err){ console.warn('Prologue WebGL unavailable; continuing without cinematic canvas.',err); return; }
+        renderer.setClearColor(0x04060f,1);
+        renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+        const scene=new THREE.Scene();
+        const camera=new THREE.PerspectiveCamera(45,1,0.1,140);
+        function resize(){const w=cv.clientWidth,h=cv.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+
+        scene.add(new THREE.AmbientLight(0x4a5a78,0.55));
+        const sun=new THREE.DirectionalLight(0xfff2dd,1.5); sun.position.set(-3.4,1.6,3.2); scene.add(sun);
+
+        // ── starfield ──
+        const STAR_N=1700, sp=new Float32Array(STAR_N*3);
+        for(let i=0;i<STAR_N;i++){const r=22+Math.random()*48,th=Math.random()*6.2832,ph=Math.acos(2*Math.random()-1);
+            sp[i*3]=r*Math.sin(ph)*Math.cos(th);sp[i*3+1]=r*Math.sin(ph)*Math.sin(th);sp[i*3+2]=r*Math.cos(ph);}
+        const starGeo=new THREE.BufferGeometry();starGeo.setAttribute('position',new THREE.BufferAttribute(sp,3));
+        const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xcfe0ff,size:0.14,sizeAttenuation:true,transparent:true,opacity:0.9,depthWrite:false}));
+        scene.add(stars);
+
+        // ── Earth + atmosphere (Pangaea — one green supercontinent on a blue ocean) ──
+        function pangaeaTex(){
+            const w=512,h=256,c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
+            const og=x.createLinearGradient(0,0,0,h);og.addColorStop(0,'#2c6aa6');og.addColorStop(0.5,'#235f97');og.addColorStop(1,'#163f68');
+            x.fillStyle=og;x.fillRect(0,0,w,h);
+            const blob=(cx,cy,rx,ry,col)=>{x.fillStyle=col;x.beginPath();x.ellipse(cx,cy,rx,ry,0,0,7);x.fill();};
+            // green supercontinent, a cluster of overlapping landmasses
+            blob(w*0.50,h*0.55,96,72,'#3f7a39');blob(w*0.40,h*0.42,58,52,'#437f3c');blob(w*0.63,h*0.62,64,44,'#3a7335');
+            blob(w*0.56,h*0.32,44,36,'#48863f');blob(w*0.72,h*0.48,38,44,'#386f33');blob(w*0.30,h*0.6,34,30,'#3c7637');
+            blob(w*0.52,h*0.5,58,40,'#4f9446');blob(w*0.6,h*0.66,30,22,'#356632');           // highlights / shadows
+            // a smaller landmass + polar ice caps
+            blob(w*0.16,h*0.34,30,22,'#3f7a39');
+            blob(w*0.5,6,140,15,'rgba(228,238,252,0.7)');blob(w*0.5,h-6,150,16,'rgba(228,238,252,0.7)');
+            const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;
         }
-        let prog=0, curBeat=-1;
-        function setBeat(b){ if(b===curBeat)return; curBeat=b; ['pb0','pb1','pb2'].forEach((id,i)=>document.getElementById(id).classList.toggle('on',i===b)); }
-        function onScroll(){
-            const r=sec.getBoundingClientRect(), total=sec.offsetHeight-innerHeight;
+        const earthMat=new THREE.MeshStandardMaterial({map:pangaeaTex(),color:0xffffff,roughness:0.9,metalness:0.0,emissive:0x0c2a44,emissiveIntensity:0.18});
+        const earth=new THREE.Mesh(new THREE.SphereGeometry(1,72,72),earthMat); scene.add(earth);
+        const atmo=new THREE.Mesh(new THREE.SphereGeometry(1.09,48,48),
+            new THREE.MeshBasicMaterial({color:0x7fd8ff,transparent:true,opacity:0.16,side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+        scene.add(atmo);
+        const impactDir=new THREE.Vector3(-0.34,0.2,0.92).normalize();
+
+        // ── rocky asteroid ──
+        const astGeo=new THREE.IcosahedronGeometry(0.11,1), apos=astGeo.attributes.position;
+        for(let i=0;i<apos.count;i++){const f=0.74+Math.random()*0.42;apos.setXYZ(i,apos.getX(i)*f,apos.getY(i)*f,apos.getZ(i)*f);}
+        astGeo.computeVertexNormals();
+        const ast=new THREE.Mesh(astGeo,new THREE.MeshStandardMaterial({color:0x8a7c6a,roughness:1,emissive:0x4a2614,emissiveIntensity:0.4}));
+        scene.add(ast);
+        const astStart=new THREE.Vector3(4.6,3.3,3.1);
+
+        // ── impact flash ──
+        function glowTex(){const s=128,c=document.createElement('canvas');c.width=c.height=s;const x=c.getContext('2d');
+            const g=x.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);g.addColorStop(0,'rgba(255,255,255,1)');
+            g.addColorStop(0.32,'rgba(255,222,165,0.85)');g.addColorStop(1,'rgba(255,140,60,0)');
+            x.fillStyle=g;x.fillRect(0,0,s,s);return new THREE.CanvasTexture(c);}
+        const gtex=glowTex();
+        const flash=new THREE.Sprite(new THREE.SpriteMaterial({map:gtex,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false}));
+        flash.position.copy(impactDir);flash.scale.setScalar(1.8);scene.add(flash);
+        // fiery glow riding the incoming asteroid
+        const astGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:gtex,color:0xffb070,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false}));
+        astGlow.scale.setScalar(0.55);ast.add(astGlow);
+        // expanding shockwave ring on the surface at the impact point
+        const shock=new THREE.Mesh(new THREE.RingGeometry(0.86,1.0,72),
+            new THREE.MeshBasicMaterial({color:0xffd6a0,transparent:true,opacity:0,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+        shock.position.copy(impactDir);shock.lookAt(impactDir.clone().multiplyScalar(2));scene.add(shock);
+
+        // ── soot / ash particles ──
+        const SOOT_N=800, soot=new Float32Array(SOOT_N*3);
+        for(let i=0;i<SOOT_N;i++){soot[i*3]=(Math.random()-0.5)*8;soot[i*3+1]=(Math.random()-0.5)*5.5;soot[i*3+2]=0.8+Math.random()*3;}
+        const sootGeo=new THREE.BufferGeometry();sootGeo.setAttribute('position',new THREE.BufferAttribute(soot,3));
+        const sootPts=new THREE.Points(sootGeo,new THREE.PointsMaterial({color:0x1c1813,size:0.17,transparent:true,opacity:0,depthWrite:false}));
+        scene.add(sootPts);
+
+        // ── dark veil overlay (the impact winter) ──
+        const veilEl=document.createElement('div');
+        Object.assign(veilEl.style,{position:'absolute',inset:'0',background:'#050406',opacity:'0',pointerEvents:'none',zIndex:'1'});
+        document.querySelector('.pro-sticky').appendChild(veilEl);
+
+        // a much longer approach: the asteroid creeps in across the first ~42% of the
+        // scroll, strikes, then the flash + shockwave + winter play out over the rest.
+        const IMPACT=0.42;
+        let prog=0,curBeat=-1;
+        function setBeat(b){if(b===curBeat)return;curBeat=b;['pb0','pb1','pb2'].forEach((id,i)=>document.getElementById(id).classList.toggle('on',i===b));}
+        function onScroll(){const r=sec.getBoundingClientRect(),total=sec.offsetHeight-innerHeight;
             prog=Math.max(0,Math.min(1,(-r.top)/Math.max(1,total)));
-            setBeat(prog<0.34?0:prog<0.69?1:2);
-            const cue=document.getElementById('proCue'); if(cue) cue.style.opacity=prog<0.04?0.7:0;
-        }
-        function drawGlobe(cx,cy,R,veil,scorch){
-            ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.clip();
-            // ocean
-            const oc=ctx.createRadialGradient(cx-R*0.3,cy-R*0.35,R*0.2,cx,cy,R);
-            const dk=1-veil*0.82;
-            oc.addColorStop(0,`rgb(${40*dk|0},${110*dk|0},${175*dk|0})`);
-            oc.addColorStop(1,`rgb(${12*dk|0},${40*dk|0},${78*dk|0})`);
-            ctx.fillStyle=oc; ctx.fillRect(cx-R,cy-R,R*2,R*2);
-            // land
-            for(const b of LAND){
-                const lg=ctx.createRadialGradient(cx+b.x*R,cy+b.y*R,1,cx+b.x*R,cy+b.y*R,Math.max(b.rx,b.ry)*R);
-                lg.addColorStop(0,`rgb(${90*dk|0},${108*dk|0},${66*dk|0})`);
-                lg.addColorStop(1,`rgb(${58*dk|0},${74*dk|0},${44*dk|0})`);
-                ctx.fillStyle=lg; ctx.beginPath();
-                ctx.ellipse(cx+b.x*R,cy+b.y*R,b.rx*R,b.ry*R,-0.3,0,7); ctx.fill();
-            }
-            // scorched stain spreading from the Yucatán after impact
-            if(scorch>0){
-                const sx=cx+YUC.x*R, sy=cy+YUC.y*R;
-                const sg=ctx.createRadialGradient(sx,sy,1,sx,sy,R*1.6*scorch);
-                sg.addColorStop(0,`rgba(20,12,8,${0.9*scorch})`);
-                sg.addColorStop(0.6,`rgba(40,22,12,${0.5*scorch})`);
-                sg.addColorStop(1,'rgba(40,22,12,0)');
-                ctx.fillStyle=sg; ctx.fillRect(cx-R,cy-R,R*2,R*2);
-            }
-            // spherical shading + terminator
-            const sh=ctx.createRadialGradient(cx-R*0.35,cy-R*0.4,R*0.1,cx,cy,R*1.05);
-            sh.addColorStop(0,'rgba(255,255,255,0.12)'); sh.addColorStop(0.6,'rgba(0,0,0,0)'); sh.addColorStop(1,'rgba(0,0,10,0.55)');
-            ctx.fillStyle=sh; ctx.fillRect(cx-R,cy-R,R*2,R*2);
-            ctx.restore();
-            // atmosphere rim
-            ctx.globalAlpha=(1-veil*0.7); ctx.strokeStyle='rgba(120,200,255,0.4)'; ctx.lineWidth=2;
-            ctx.beginPath(); ctx.arc(cx,cy,R+1.5,0,7); ctx.stroke(); ctx.globalAlpha=1;
-        }
-        function draw(now){
-            requestAnimationFrame(draw);
-            if(!W) return;
-            ctx.clearRect(0,0,W,H);
-            const p=prog, cx=W*0.5, cy=H*0.5, R=Math.min(W,H)*0.20;
-            const ix=cx+YUC.x*R, iy=cy+YUC.y*R;
-            const veil=Math.max(0,Math.min(1,(p-IMPACT)/0.32)) * Math.max(0,Math.min(1,1-(p-0.74)/0.22)); // rise then ease
-            const scorch=Math.max(0,Math.min(1,(p-IMPACT)/0.18));
+            setBeat(prog<0.52?0:prog<0.78?1:2);
+            const cue=document.getElementById('proCue');if(cue)cue.style.opacity=prog<0.03?0.7:0;}
 
-            // sky: stars (dim early, blotted at peak veil, return as it clears)
-            const starA=(0.5+0.5*Math.max(0,(p-0.78)/0.22))*(1-veil*0.9);
-            for(const s of stars){const a=starA*(0.5+0.5*Math.abs(Math.sin(s.tw+now*0.0009)));ctx.globalAlpha=Math.max(0,a);ctx.fillStyle='#dfe9ff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.fill();}
-            ctx.globalAlpha=1;
+        function frame(now){
+            requestAnimationFrame(frame);
+            const p=prog;
+            earth.rotation.y+=0.0010; stars.rotation.y=p*0.28; stars.rotation.x=p*0.1;
 
-            // the globe
-            drawGlobe(cx,cy,R,veil,scorch);
+            const veil=Math.max(0,Math.min(1,(p-IMPACT)/0.22))*Math.max(0,Math.min(1,1-(p-0.86)/0.14));
+            veilEl.style.opacity=(veil*0.74).toFixed(3);
+            sootPts.material.opacity=veil*0.85; sootPts.rotation.z=now*0.00003;
 
-            // incoming asteroid streak (before impact)
-            if(p<IMPACT){
-                const ap=p/IMPACT, sx=cx+R*1.9, sy=cy-R*2.1;
-                const ax=sx+(ix-sx)*ap, ay=sy+(iy-sy)*ap, len=120;
-                const L=Math.hypot(sx-ix,sy-iy), tx=ax+(sx-ix)/L*len, ty=ay+(sy-iy)/L*len;
-                const g=ctx.createLinearGradient(ax,ay,tx,ty);
-                g.addColorStop(0,'rgba(255,240,210,0.95)');g.addColorStop(0.3,'rgba(255,150,70,0.7)');g.addColorStop(1,'rgba(255,90,40,0)');
-                ctx.strokeStyle=g;ctx.lineWidth=2.5+4*ap;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(tx,ty);ctx.stroke();
-                ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ax,ay,2.5+3*ap,0,7);ctx.fill();
-                // Yucatán marker + label
-                ctx.globalAlpha=0.6+0.4*Math.sin(now*0.006);
-                ctx.strokeStyle='#ffd27a';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(ix,iy,7,0,7);ctx.stroke();ctx.globalAlpha=1;
-                ctx.fillStyle='rgba(255,210,122,0.9)';ctx.font='600 13px "Space Mono",monospace';ctx.textAlign='left';
-                ctx.fillText('Yucatán',ix+12,iy-8);
-            }
+            // the impact winter darkens the textured Earth and reddens its glow
+            earthMat.color.setScalar(1-veil*0.62);
+            earthMat.emissive.setRGB(0.05+veil*0.10,0.165*(1-veil*0.5),0.27*(1-veil*0.6));
+            earthMat.emissiveIntensity=0.18+veil*0.12;
 
-            // impact flash + ejecta plume
-            if(p>=IMPACT){
-                const e=p-IMPACT;
-                const fl=Math.max(0,0.6-e*4);
-                if(fl>0){const fg=ctx.createRadialGradient(ix,iy,0,ix,iy,R*2.2);
-                    fg.addColorStop(0,`rgba(255,250,235,${fl})`);fg.addColorStop(0.4,`rgba(255,170,90,${fl*0.7})`);fg.addColorStop(1,'rgba(255,90,40,0)');
-                    ctx.fillStyle=fg;ctx.beginPath();ctx.arc(ix,iy,R*2.2,0,7);ctx.fill();}
-                // ejecta ring
-                const rp=Math.min(1,e/0.16);
-                if(rp<1){ctx.globalAlpha=0.5*(1-rp);ctx.strokeStyle='#ffd9a0';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(ix,iy,8+rp*R*1.4,0,7);ctx.stroke();ctx.globalAlpha=1;}
-            }
+            // incoming asteroid (eases in, fireball brightening as it nears)
+            if(p<IMPACT){const ap=p/IMPACT; ast.visible=true;
+                ast.position.lerpVectors(astStart,impactDir,ap*ap*ap); ast.rotation.x+=0.05; ast.rotation.y+=0.04;
+                astGlow.material.opacity=0.25+0.7*ap; astGlow.scale.setScalar(0.45+0.5*ap);
+            } else { ast.visible=false; }
 
-            // sky blotted out: dark veil over everything + drifting soot
-            if(veil>0){
-                ctx.globalAlpha=veil*0.66;ctx.fillStyle='#070608';ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
-                for(const a of ash){a.y+=a.sp;a.x+=a.dx;if(a.y>H)a.y=-6;if(a.x<0)a.x=W;if(a.x>W)a.x=0;
-                    ctx.globalAlpha=veil*0.55;ctx.fillStyle='#2c2620';ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,7);ctx.fill();}
-                ctx.globalAlpha=1;
-            }
+            // sustained flash + expanding shockwave after the strike
+            const e=p-IMPACT;
+            flash.material.opacity=(e>=0&&e<0.2)?(1-e/0.2):0;
+            flash.scale.setScalar(1.4+(e>0?Math.min(0.2,e):0)*16);
+            const sw=e/0.26;
+            if(e>=0&&sw<1){ shock.material.opacity=0.65*(1-sw); shock.scale.setScalar(0.05+sw*2.4); }
+            else shock.material.opacity=0;
 
-            // a lone asteroid drifting in as the sky finally clears
-            if(p>0.82){const q=(p-0.82)/0.18, ax=cx+(0.5-q)*W*0.5, ay=cy-R*2.4;
-                ctx.globalAlpha=Math.min(1,q*2.4);ctx.fillStyle='#cfd6e2';ctx.beginPath();ctx.arc(ax,ay,3,0,7);ctx.fill();
-                ctx.strokeStyle='rgba(207,214,226,0.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax+34,ay-9);ctx.stroke();ctx.globalAlpha=1;}
+            const cz=3.7-p*0.8, cx=Math.sin(p*0.7)*0.45;
+            camera.position.set(cx,0.12+p*0.12,cz); camera.lookAt(0,0,0);
+            renderer.render(scene,camera);
         }
         addEventListener('resize',resize);addEventListener('scroll',onScroll,{passive:true});
-        resize();onScroll();requestAnimationFrame(draw);
+        resize();onScroll();requestAnimationFrame(frame);
     })();
 
     /* ════════════════════════ SCENE BRIDGE (postMessage) ════════════════════════ */
@@ -545,27 +602,45 @@
                 scene.contentWindow.postMessage({scene:true,type:'camera',preset:'overview'},'*');
                 cmdQueue.splice(0).forEach(c=>scene.contentWindow.postMessage(c,'*')); } }
         else if(m.type==='wheel'){ window.scrollBy(0,m.dy); }   // scene forwards page scroll
-        else if(m.type==='tick'){ updateReadout(m.name,m.distLd,m.haz); }
-        else if(m.type==='focused'){ /* name confirmed */ }
-        else if(m.type==='absent'){ flashAbsent(m.name); }
+        // tick / focused / absent: the scene now shows its own always-on label above
+        // the focused asteroid, so the parent no longer mirrors a readout pill.
     });
-    // readout pill
-    const readout=document.getElementById('readout'),roName=document.getElementById('roName'),roLd=document.getElementById('roLd');
-    let roHide;
-    function updateReadout(name,ld,haz){
-        roName.textContent=name; roLd.textContent=' · '+(ld<1?ld.toFixed(2):ld.toFixed(1))+' LD from Earth';
-        readout.classList.toggle('haz',!!haz); readout.classList.add('show');
-        clearTimeout(roHide); roHide=setTimeout(()=>readout.classList.remove('show'),1400);
-    }
-    function flashAbsent(name){
-        roName.textContent=name; roLd.textContent=' · never approaches — not in the near-Earth set';
-        readout.classList.remove('haz'); readout.classList.add('show');
-        clearTimeout(roHide); roHide=setTimeout(()=>readout.classList.remove('show'),2600);
-    }
 
     /* ════════════════════════ DATA + OVERLAYS + STEP CONTROLLER ════════════════════════ */
     const tooltip=d3.select('#tooltip');
     function tipMove(ev){tooltip.style('left',(ev.clientX+14)+'px').style('top',(ev.clientY-10)+'px');}
+    function showTip(ev, html, visual=true){
+        tooltip.classed('visual',visual).style('opacity',1).html(html);
+        tipMove(ev);
+    }
+    function hideTip(){ tooltip.style('opacity',0).classed('visual',false); }
+    function flybyTip({count,label,sub,haz=0,near=false,ld0=0,ld1=200,pct=null}){
+        const c=count===0?0:(count<=18?count:Math.max(6,Math.min(14,Math.round(Math.sqrt(count||1)))));
+        const redN=count>0?Math.round(c*Math.min(1,haz/count)):0;
+        const mid=(ld0+ld1)/2;
+        const pass=18+Math.min(1,mid/180)*58;       // close bins skim Earth; far bins arc wide
+        const streaks=Array.from({length:c},(_,i)=>{
+            const spread=(i-(c-1)/2)*5;
+            const y0=86+spread+(i%2?5:-5), y1=86-spread+(i%2?-5:5), closeY=86-pass+spread*0.35;
+            return `<path class="orbit" d="M 16 ${y0} C 82 ${y0}, 112 ${closeY}, 150 ${closeY} S 220 ${y1}, 292 ${y1}" fill="none" stroke="${i<redN?'#ff7a72':'#7fd8ff'}" stroke-width="${near?2.3:1.45}" opacity="${near?0.92:0.66}"/>`;
+        }).join('');
+        return `<div class="tipviz"><svg viewBox="0 0 310 160" aria-hidden="true">
+            <defs><radialGradient id="tvEarth" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#8cc7ff"/><stop offset="65%" stop-color="#3d7fc4"/><stop offset="100%" stop-color="#13365e"/></radialGradient></defs>
+            <circle cx="150" cy="86" r="19" fill="url(#tvEarth)"/><circle cx="150" cy="86" r="${pass}" fill="none" stroke="rgba(127,216,255,0.13)"/>
+            ${streaks}
+        </svg><div class="tbig"><b>${count.toLocaleString()}</b> ${label}</div></div>`;
+    }
+    function scaleTip({name,dia,ld,haz=false}){
+        const pct=Math.max(3,Math.min(100,Math.sqrt(dia/12000)*86));
+        const miss=Math.max(5,Math.min(100,ld/80*100));
+        return `<div class="tipviz"><svg viewBox="0 0 238 112" aria-hidden="true">
+            <line x1="22" x2="216" y1="28" y2="28" stroke="rgba(255,255,255,0.12)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="22" x2="${22+pct*1.94}" y1="28" y2="28" stroke="${haz?'#ff7a72':'#7fd8ff'}" stroke-width="5" stroke-linecap="round"/>
+            <text x="22" y="17" fill="rgba(226,231,243,.55)" font-size="9" font-family="IBM Plex Mono">size vs Chicxulub</text>
+            <circle cx="119" cy="76" r="14" fill="#3d7fc4"/><path d="M 38 76 Q 119 ${76-miss*.48} 200 76" fill="none" stroke="${haz?'#ff7a72':'#7fd8ff'}" stroke-width="2" stroke-dasharray="5 4"/>
+            <circle cx="119" cy="${76-miss*.24}" r="4" fill="${haz?'#ff7a72':'#7fd8ff'}"/>
+        </svg><div class="tbig">${name}</div><div class="tline">${dia>=1000?(dia/1000).toFixed(1)+' km':Math.round(dia)+' m'} · ${ld.toFixed(2)} LD miss</div></div>`;
+    }
     let primerSafe='Bennu', primerHazName='Apophis';   // overwritten from the scene roster
     // Pick a safe + hazardous asteroid that exist in the scene and pass far enough
     // (>~14 LD) to render just outside Earth's sphere when focused — clearly visible.
@@ -590,98 +665,149 @@
 
         buildHistogram(futureLD, bestEv);
         buildScatter(bestEv, meta);
-        buildLadder();
+        buildLadder(meta);
         buildComparison(bestEv, meta);
         buildApophisMini();
         initController();
     }).catch(err=>{ console.error(err); });
 
-    /* ── overlay histogram (hover bin → highlight scene) ── */
+    /* ── overlay histogram — large, with cumulative readout + click-to-3D shell ── */
     function buildHistogram(data, bestEv){
-        const W=404,H=232,m={top:14,right:14,bottom:34,left:40},iw=W-m.left-m.right,ih=H-m.top-m.bottom;
-        const svg=d3.select('#histChart').append('svg').attr('width',W).attr('height',H).append('g').attr('transform',`translate(${m.left},${m.top})`);
+        const W=1320,H=700,m={top:26,right:38,bottom:72,left:78},iw=W-m.left-m.right,ih=H-m.top-m.bottom;
+        const svg=d3.select('#histChart').append('svg').attr('viewBox',`0 0 ${W} ${H}`).append('g').attr('transform',`translate(${m.left},${m.top})`);
         const maxLD=200,x=d3.scaleLinear().domain([0,maxLD]).range([0,iw]);
-        const bins=d3.bin().domain([0,maxLD]).thresholds(34)(data.filter(d=>d<=maxLD));
+        const bins=d3.bin().domain([0,maxLD]).thresholds(40)(data.filter(d=>d<=maxLD));
         const y=d3.scaleLinear().domain([0,d3.max(bins,b=>b.length)]).nice().range([ih,0]);
+        const total=data.length, med=d3.median(data);
         const defs=svg.append('defs');const lg=defs.append('linearGradient').attr('id','hg').attr('x1',0).attr('y1',0).attr('x2',0).attr('y2',1);
-        lg.append('stop').attr('offset','0%').attr('stop-color','#6fd3ff');lg.append('stop').attr('offset','100%').attr('stop-color','#2f6f9e');
-        svg.append('g').attr('class','grid').call(d3.axisLeft(y).ticks(4).tickSize(-iw).tickFormat(''));
-        // names by closest LD, for hover linking
+        lg.append('stop').attr('offset','0%').attr('stop-color','#9fe2ff');lg.append('stop').attr('offset','100%').attr('stop-color','#2f6f9e');
+        svg.append('g').attr('class','grid').call(d3.axisLeft(y).ticks(5).tickSize(-iw).tickFormat(''));
         const named=[...bestEv.values()].map(c=>({name:c.name,ld:c.miss_distance_ld}));
+        // running cumulative for the hover readout
+        let run=0; bins.forEach(b=>{ b._cumLo=run; run+=b.length; b._cumHi=run; });
         svg.selectAll('rect.b').data(bins).enter().append('rect').attr('class','b')
             .attr('x',d=>x(d.x0)+1).attr('width',d=>Math.max(0,x(d.x1)-x(d.x0)-1.5))
-            .attr('y',d=>y(d.length)).attr('height',d=>ih-y(d.length)).attr('rx',2)
-            .attr('fill',d=>d.x0<5?'var(--coral)':'url(#hg)').attr('opacity',0.9)
+            .attr('y',d=>y(d.length)).attr('height',d=>ih-y(d.length)).attr('rx',2.5)
+            .attr('fill',d=>d.x0<5?'var(--coral)':'url(#hg)').attr('opacity',0.92).style('cursor','pointer')
             .on('mouseenter',function(ev,d){d3.select(this).attr('opacity',1);
                 const names=named.filter(o=>o.ld>=d.x0&&o.ld<d.x1).map(o=>o.name);
                 send({type:'highlight',names});
-                tooltip.style('opacity',1).html(`<strong>${d.x0.toFixed(0)}–${d.x1.toFixed(0)} LD</strong><br><span style="color:var(--cyan)">${d.length}</span> approaches<br><span style="color:#888">${(d.x0*0.3844).toFixed(1)}–${(d.x1*0.3844).toFixed(1)}M km</span>`);})
+                const pctCloser=Math.round(d._cumHi/total*100);
+                showTip(ev,flybyTip({count:d.length,label:'flybys',sub:'',ld0:d.x0,ld1:d.x1,pct:pctCloser,near:d.x1<10}),true);})
             .on('mousemove',tipMove)
-            .on('mouseleave',function(){d3.select(this).attr('opacity',0.9);tooltip.style('opacity',0);send({type:'highlight',names:null});});
-        svg.append('g').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6));
-        svg.append('g').call(d3.axisLeft(y).ticks(4));
-        svg.append('text').attr('class','axis-label').attr('x',iw/2).attr('y',ih+30).style('text-anchor','middle').text('miss distance — lunar distances');
-        const xm=x(d3.median(data));
+            .on('mouseleave',function(){d3.select(this).attr('opacity',0.92);hideTip();send({type:'highlight',names:null});})
+            .on('click',function(ev,d){ const names=named.filter(o=>o.ld>=d.x0&&o.ld<d.x1).map(o=>o.name);
+                hideTip();
+                revealScene([{type:'clearFocus'},{type:'filter',kind:'all'},{type:'camera',preset:'top'},{type:'highlight',names}]); });
+        svg.append('g').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(8));
+        svg.append('g').call(d3.axisLeft(y).ticks(5));
+        svg.append('text').attr('class','axis-label').attr('x',iw/2).attr('y',ih+42).style('text-anchor','middle').text('miss distance — lunar distances (LD)');
+        svg.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',-46).style('text-anchor','middle').text('number of close approaches');
+        const xm=x(med);
         svg.append('line').attr('class','annot-line').attr('x1',xm).attr('x2',xm).attr('y1',0).attr('y2',ih);
-        svg.append('text').attr('class','annot').attr('x',xm+5).attr('y',12).text('median '+d3.median(data).toFixed(0)+' LD');
+        svg.append('text').attr('class','annot').attr('x',xm+6).attr('y',14).text('median '+med.toFixed(0)+' LD');
         svg.append('line').attr('class','annot-line co').attr('x1',x(1)).attr('x2',x(1)).attr('y1',0).attr('y2',ih);
-        svg.append('text').attr('class','annot co').attr('x',x(1)+5).attr('y',ih-4).text('◄ Moon');
+        svg.append('text').attr('class','annot co').attr('x',x(1)+6).attr('y',28).text('the Moon');
     }
 
-    /* ── overlay scatter (hover → highlight, click → focus) ── */
+    /* ── overlay scatter — hexbin density (fixes overplotting) + notable rocks → 3-D ── */
     function buildScatter(bestEv, meta){
         const data=[]; for(const[name,c]of bestEv){const mt=meta.get(name); if(!mt||!mt.dia) continue;
             data.push({name,ld:c.miss_distance_ld,dia:mt.dia,haz:mt.haz,cls:mt.cls});}
-        const W=404,H=250,m={top:22,right:16,bottom:34,left:44},iw=W-m.left-m.right,ih=H-m.top-m.bottom;
-        const svg=d3.select('#scatterChart').append('svg').attr('width',W).attr('height',H).append('g').attr('transform',`translate(${m.left},${m.top})`);
+        const W=1320,H=720,m={top:34,right:40,bottom:76,left:84},iw=W-m.left-m.right,ih=H-m.top-m.bottom;
+        const svg=d3.select('#scatterChart').append('svg').attr('viewBox',`0 0 ${W} ${H}`).append('g').attr('transform',`translate(${m.left},${m.top})`);
         const x=d3.scaleLog().domain([0.08,d3.max(data,d=>d.ld)*1.1]).range([0,iw]);
         const y=d3.scaleLog().domain([d3.min(data,d=>d.dia)*0.8,d3.max(data,d=>d.dia)*1.15]).range([ih,0]);
-        const r=d3.scaleSqrt().domain([0,d3.max(data,d=>d.dia)]).range([1.1,6.5]);
         svg.append('g').attr('class','grid').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).tickValues([0.1,1,10,100]).tickSize(-ih).tickFormat(''));
         svg.append('g').attr('class','grid').call(d3.axisLeft(y).tickValues([100,1000,10000]).tickSize(-iw).tickFormat(''));
-        svg.append('rect').attr('x',0).attr('y',0).attr('width',x(5)).attr('height',y(1000)).attr('fill','rgba(255,107,107,0.05)').attr('stroke','rgba(255,107,107,0.25)').attr('stroke-dasharray','4 4').attr('rx',3);
-        svg.append('text').attr('class','annot co').attr('x',6).attr('y',13).text('big & close — empty');
-        svg.selectAll('circle').data(data).enter().append('circle')
-            .attr('cx',d=>x(d.ld)).attr('cy',d=>y(d.dia)).attr('r',d=>r(d.dia))
-            .attr('fill',d=>d.haz?'var(--coral)':'var(--cyan)').attr('opacity',0.38).attr('stroke','rgba(4,6,15,0.5)').attr('stroke-width',0.3)
-            .style('cursor','pointer')
-            .on('mouseenter',function(ev,d){d3.select(this).attr('opacity',1).attr('stroke','#fff').attr('stroke-width',1.4).raise();
-                send({type:'highlight',names:[d.name]});
-                const km=d.ld*384400;
-                tooltip.style('opacity',1).html(`<strong style="color:${d.haz?'var(--coral)':'var(--cyan)'}">${d.name}</strong> <span style="color:#888">${d.cls}</span><br>${d.dia>=1000?(d.dia/1000).toFixed(1)+' km':Math.round(d.dia)+' m'} · ${d.ld.toFixed(2)} LD<br><span style="color:#888">${km>=1e6?(km/1e6).toFixed(2)+'M km':Math.round(km).toLocaleString()+' km'}</span>`);})
+        // binned density — hexagons coloured by how many asteroids fall in each cell
+        const hb=d3.hexbin().x(d=>x(d.ld)).y(d=>y(d.dia)).radius(15).extent([[0,0],[iw,ih]]);
+        const hbins=hb(data), maxC=d3.max(hbins,b=>b.length)||1;
+        const col=d3.scaleSequential(t=>d3.interpolateRgb('#1d3a55','#9fe2ff')(Math.pow(t,0.6))).domain([0,maxC]);
+        svg.append('g').selectAll('path').data(hbins).enter().append('path')
+            .attr('d',hb.hexagon()).attr('transform',d=>`translate(${d.x},${d.y})`)
+            .attr('fill',d=>col(d.length)).attr('stroke','rgba(4,6,15,0.5)').attr('stroke-width',0.5).attr('opacity',0.9)
+            .on('mouseenter',function(ev,d){d3.select(this).attr('stroke','#fff').attr('stroke-width',1).raise();
+                const hz=d.filter(o=>o.haz).length;
+                const ldVals=d.map(o=>o.ld), ld0=d3.min(ldVals)||0, ld1=d3.max(ldVals)||0;
+                showTip(ev,flybyTip({count:d.length,label:'asteroids',sub:'',haz:hz,ld0,ld1,near:d.x<80}),true);})
             .on('mousemove',tipMove)
-            .on('mouseleave',function(){d3.select(this).attr('opacity',0.38).attr('stroke','rgba(4,6,15,0.5)').attr('stroke-width',0.3);tooltip.style('opacity',0);send({type:'highlight',names:null});})
-            .on('click',(ev,d)=>{ send({type:'highlight',names:null}); send({type:'focus',name:d.name,preset:'closeup'}); });
+            .on('mouseleave',function(){d3.select(this).attr('stroke','rgba(4,6,15,0.5)').attr('stroke-width',0.5);hideTip();});
+        // empty danger corner
+        svg.append('rect').attr('x',0).attr('y',0).attr('width',x(5)).attr('height',y(1000)).attr('fill','rgba(255,122,114,0.05)').attr('stroke','rgba(255,122,114,0.3)').attr('stroke-dasharray','5 4').attr('rx',3);
+        svg.append('text').attr('class','annot co').attr('x',10).attr('y',18).text('big & close — empty');
+        // notable, clickable rocks float on top of the density
+        const want=new Set(['Eros','Apophis','Ganymed','Florence','Phaethon','Bennu']);
+        const notable=data.filter(d=>want.has(d.name)).concat(data.slice().sort((a,b)=>b.dia-a.dia).slice(0,4));
+        const seen=new Set(); const marks=notable.filter(d=>!seen.has(d.name)&&seen.add(d.name));
+        svg.append('g').selectAll('circle').data(marks).enter().append('circle')
+            .attr('cx',d=>x(d.ld)).attr('cy',d=>y(d.dia)).attr('r',5)
+            .attr('fill',d=>d.haz?'var(--coral)':'#cfe6ff').attr('stroke','rgba(4,6,15,0.8)').attr('stroke-width',1).style('cursor','pointer')
+            .on('mouseenter',function(ev,d){d3.select(this).attr('r',7).attr('stroke','#fff');
+                showTip(ev,scaleTip(d),true);})
+            .on('mousemove',tipMove)
+            .on('mouseleave',function(){d3.select(this).attr('r',5).attr('stroke','rgba(4,6,15,0.8)');hideTip();})
+            .on('click',(ev,d)=>{ hideTip(); revealScene([{type:'highlight',names:null},{type:'filter',kind:'all'},{type:'focus',name:d.name,preset:'closeup',jump:false},{type:'speed',idx:1},{type:'play',on:true}]); });
+        svg.selectAll('text.mk').data(marks).enter().append('text').attr('class',d=>'annot mk '+(d.haz?'co':'cy'))
+            .attr('x',d=>x(d.ld)+9).attr('y',d=>y(d.dia)+3).text(d=>d.name);
         svg.append('g').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).tickValues([0.1,1,10,100]).tickFormat(d=>d+'LD'));
         svg.append('g').call(d3.axisLeft(y).tickValues([100,1000,10000]).tickFormat(d=>d>=1000?(d/1000)+'km':d+'m'));
+        svg.append('text').attr('class','axis-label').attr('x',iw/2).attr('y',ih+44).style('text-anchor','middle').text('closest pass — lunar distances (LD)');
+        svg.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('x',-ih/2).attr('y',-46).style('text-anchor','middle').text('diameter');
         svg.append('line').attr('class','annot-line').attr('x1',0).attr('x2',iw).attr('y1',y(12000)).attr('y2',y(12000)).style('opacity',0.5);
-        svg.append('text').attr('class','annot').attr('x',iw-2).attr('y',y(12000)-5).style('text-anchor','end').text('Chicxulub ≈12km');
-        // label the famous ones
-        data.forEach(d=>{ if(d.name==='Eros'){svg.append('text').attr('class','annot cy').attr('x',x(d.ld)-r(d.dia)-4).attr('y',y(d.dia)+3).style('text-anchor','end').text('Eros');}
-            if(d.name==='Apophis'){svg.append('text').attr('class','annot co').attr('x',x(d.ld)+r(d.dia)+4).attr('y',y(d.dia)+3).text('◄ Apophis');} });
+        svg.append('text').attr('class','annot').attr('x',iw-2).attr('y',y(12000)-6).style('text-anchor','end').text('Chicxulub ≈12km');
     }
 
-    /* ── thresholds ladder ── */
-    function buildLadder(){
+    /* ── thresholds ladder — hover a rung for example asteroids at that size ── */
+    function buildLadder(meta){
+        const byDia=[...meta.entries()].filter(([n,m])=>m.dia).map(([n,m])=>({n,dia:m.dia})).sort((a,b)=>b.dia-a.dia);
+        const ex=(lo,hi)=>byDia.filter(d=>d.dia>=lo&&(hi==null||d.dia<hi)).slice(0,6).map(d=>d.n);
         const rungs=[
-            {lab:'Regional / city', sub:'≥ 140 m', n:1997, c:'#6fd3ff'},
-            {lab:'Civilization', sub:'≥ 1 km', n:1286, c:'#ffc861'},
-            {lab:'Mass extinction', sub:'≥ 10 km (Chicxulub)', n:11, c:'#ff6b6b'},
-            {lab:'On a collision course', sub:'the bar that matters', n:0, c:'#6fd3ff', zero:true},
+            {lab:'Regional / city', sub:'≥ 140 m', n:1997, c:'#7fd8ff', ex:ex(140,1000)},
+            {lab:'Civilization', sub:'≥ 1 km', n:1286, c:'#ffc861', ex:ex(1000,10000)},
+            {lab:'Mass extinction', sub:'≥ 10 km (Chicxulub)', n:11, c:'#ff7a72', ex:ex(10000,null)},
+            {lab:'On a collision course', sub:'the bar that matters', n:0, c:'#7fd8ff', zero:true, ex:[]},
         ];
         const el=document.getElementById('ladder');
         rungs.forEach(r=>{
-            const row=document.createElement('div');row.className='rung'+(r.zero?' zero':'');
+            const row=document.createElement('div');row.className='rung'+(r.zero?' zero':'')+(r.ex.length?' linked':'');
             row.innerHTML=`<div class="lab"><b>${r.lab}</b>${r.sub}</div>`+
                 `<div class="meter"><i style="width:0;background:${r.c}"></i></div>`+
                 `<div class="cnt">${r.zero?'0':r.n.toLocaleString()}</div>`;
             el.appendChild(row);
             row._fill=row.querySelector('i'); row._w=(r.zero?2:Math.max(2,r.n/2000*100));
+            if(r.ex.length){
+                row.addEventListener('mouseenter',ev=>{ send({type:'highlight',names:r.ex});
+                    showTip(ev,flybyTip({count:r.n,label:'rocks',sub:r.sub+' threshold',haz:0,near:r.lab.includes('Regional')}),true); });
+                row.addEventListener('mousemove',tipMove);
+                row.addEventListener('mouseleave',()=>{ hideTip(); send({type:'highlight',names:null}); });
+            } else if(r.zero){
+                row.addEventListener('mouseenter',ev=>{ showTip(ev,flybyTip({count:0,label:'impact paths',sub:'none of the 2,000 hit Earth'}),true); });
+                row.addEventListener('mousemove',tipMove);
+                row.addEventListener('mouseleave',()=>hideTip());
+            }
         });
     }
     function animateLadder(){ document.querySelectorAll('#ladder .rung').forEach((row,i)=>setTimeout(()=>{row._fill.style.width=row._w+'%';},120*i)); }
 
-    /* ── Chicxulub vs real-threats comparison (to scale) ── */
+    /* ── irregular, cratered rocky body (deterministic per name) ── */
+    function asteroidSVG(px, rgb, name){
+        let h=2166136261; for(let i=0;i<name.length;i++){h^=name.charCodeAt(i);h=Math.imul(h,16777619);}
+        const rnd=()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
+        const N=11, R=42, pts=[];
+        for(let i=0;i<N;i++){const a=i/N*Math.PI*2, rr=R*(0.72+rnd()*0.28);pts.push([Math.cos(a)*rr,Math.sin(a)*rr]);}
+        const d='M'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L')+'Z';
+        let craters=''; for(let i=0;i<3;i++){const a=rnd()*6.283,rr=R*0.55*rnd(),cx=Math.cos(a)*rr,cy=Math.sin(a)*rr,cr=R*(0.07+rnd()*0.11);
+            craters+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${cr.toFixed(1)}" fill="rgba(0,0,0,0.22)"/>`;}
+        const gid='ag'+name.replace(/[^a-z]/gi,'');
+        return `<svg width="${px}" height="${px}" viewBox="-50 -50 100 100">`+
+            `<defs><radialGradient id="${gid}" cx="35%" cy="30%" r="78%">`+
+            `<stop offset="0%" stop-color="rgba(${rgb},1)"/><stop offset="58%" stop-color="rgba(${rgb},0.66)"/>`+
+            `<stop offset="100%" stop-color="rgba(${rgb},0.28)"/></radialGradient></defs>`+
+            `<path d="${d}" fill="url(#${gid})" stroke="rgba(${rgb},0.55)" stroke-width="1.1"/>${craters}</svg>`;
+    }
+
+    /* ── Chicxulub vs real-threats comparison (discs scaled by diameter) ── */
     function buildComparison(bestEv, meta){
         // values verified from the dataset; Chicxulub is the external reference
         const objs=[
@@ -692,18 +818,19 @@
             {name:'Apophis', sub:'the famous one', dia:370, v:7.4, miss:0.10, link:'Apophis'},
         ];
         // size discs to scale (area ∝ diameter), capped for layout
-        const maxD=Math.max(...objs.map(o=>o.dia)), R=d3.scaleSqrt().domain([0,maxD]).range([0,52]);
+        const maxD=Math.max(...objs.map(o=>o.dia)), R=d3.scaleSqrt().domain([0,maxD]).range([0,54]);
         const row=document.getElementById('cmpRow');
         objs.forEach(o=>{
             const d=document.createElement('div');d.className='cmp'+(o.dino?' dino':'')+(o.link?' linked':'');
-            const col=o.dino?'255,107,107':(o.dia>=10000?'255,138,61':'111,211,255');
-            const r=Math.max(5,R(o.dia));
-            d.innerHTML=`<div class="disc" style="width:${r*2}px;height:${r*2}px;background:radial-gradient(circle at 38% 35%,rgba(${col},0.95),rgba(${col},0.35));box-shadow:0 0 18px rgba(${col},0.45)"></div>`+
+            const col=o.dino?'255,122,114':(o.dia>=10000?'255,154,92':'150,210,245');
+            const r=Math.max(7,R(o.dia));
+            d.innerHTML=`<div class="disc">${asteroidSVG(r*2,col,o.name)}</div>`+
                 `<div class="nm">${o.name}</div>`+
                 `<div class="dia">${o.dia>=1000?(o.dia/1000)+' km':o.dia+' m'}</div>`;
-            if(o.link){ d.addEventListener('mouseenter',()=>send({type:'highlight',names:[o.link]}));
-                d.addEventListener('mouseleave',()=>send({type:'highlight',names:['Florence','Phaethon','Apophis']}));
-                d.addEventListener('click',()=>send({type:'focus',name:o.link,preset:'closeup'})); }
+            if(o.link){ d.addEventListener('mouseenter',ev=>{send({type:'highlight',names:[o.link]});showTip(ev,scaleTip({name:o.name,dia:o.dia,ld:o.miss,haz:o.name==='Apophis'}),true);});
+                d.addEventListener('mousemove',tipMove);
+                d.addEventListener('mouseleave',()=>{hideTip();send({type:'highlight',names:['Florence','Phaethon','Apophis']});});
+                d.addEventListener('click',()=>revealScene([{type:'highlight',names:null},{type:'filter',kind:'all'},{type:'focus',name:o.link,preset:'closeup'}])); }
             row.appendChild(d);
         });
         // velocity + miss meta bars
@@ -724,7 +851,7 @@
         const cx=230,cy=210,moonR=178,pxPerKm=moonR/384400;
         const earthR=11, apoR=(6371+38000)*pxPerKm;
         const E=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
-        const txt=(x,y,s,o={})=>{const t=E('text',Object.assign({x,y,'font-size':'12','font-family':'Space Mono'},o));t.textContent=s;svg.appendChild(t);};
+        const txt=(x,y,s,o={})=>{const t=E('text',Object.assign({x,y,'font-size':'12','font-family':'IBM Plex Mono'},o));t.textContent=s;svg.appendChild(t);};
         const defs=E('defs',{});defs.innerHTML=`<radialGradient id="eg" cx="38%" cy="34%" r="75%"><stop offset="0%" stop-color="#7cbcff"/><stop offset="55%" stop-color="#3d7fc4"/><stop offset="100%" stop-color="#173f6e"/></radialGradient>`;svg.appendChild(defs);
 
         // the Moon's orbit, far out
@@ -733,8 +860,9 @@
 
         // Apophis pass + apex marker, labelled with the number only
         const apexY=cy-apoR;
-        svg.appendChild(E('path',{d:`M ${cx-150} ${cy-apoR*0.5} Q ${cx} ${apexY-3}, ${cx+150} ${cy-apoR*0.5}`,fill:'none',stroke:'var(--coral)','stroke-width':1.8,'stroke-dasharray':'5 4'}));
-        svg.appendChild(E('circle',{cx,cy:apexY,r:4,fill:'#ff6b6b'}));
+        const baseY=cy-apoR*0.5;
+        svg.appendChild(E('path',{class:'apo-path',d:`M ${cx-150} ${baseY} Q ${cx-70} ${apexY}, ${cx} ${apexY} Q ${cx+70} ${apexY}, ${cx+150} ${baseY}`,fill:'none',stroke:'var(--coral)','stroke-width':1.8}));
+        svg.appendChild(E('circle',{class:'apo-dot',cx,cy:apexY,r:4,fill:'#ff6b6b'}));
         txt(cx,apexY-11,'38,000 km',{fill:'var(--coral)','text-anchor':'middle','font-weight':'700','font-size':'13'});
 
         // Earth
@@ -744,78 +872,138 @@
 
     /* ════════════════════════ SCROLL CONTROLLER ════════════════════════ */
     const OVL={hist:'ovlHist',scatter:'ovlScatter',thresh:'ovlThresh',cmp:'ovlCmp'};
-    function showOverlay(key){ Object.entries(OVL).forEach(([k,elid])=>document.getElementById(elid).classList.toggle('show',k===key)); }
+    const figureEl=document.getElementById('figure'), chartBack=document.getElementById('chartBack');
+    // showing a chart REPLACES the 3-D scene (fades the iframe out behind a clean backdrop)
+    function showOverlay(key){
+        Object.entries(OVL).forEach(([k,elid])=>document.getElementById(elid).classList.toggle('show',k===key));
+        figureEl.classList.toggle('charting',!!key);
+        document.getElementById('scrolly').classList.toggle('charting',!!key);
+        chartBack.classList.remove('show');
+    }
+    // a chart can hand off to the live 3-D scene (fly to an asteroid / spotlight a shell);
+    // the "back to chart" pill brings the reader back to where they were.
+    function revealScene(cmds){
+        Object.values(OVL).forEach(id=>document.getElementById(id).classList.remove('show'));
+        figureEl.classList.remove('charting');
+        document.getElementById('scrolly').classList.remove('charting');
+        chartBack.classList.add('show');
+        (cmds||[]).forEach(send);
+    }
+    chartBack.addEventListener('click',()=>{ chartBack.classList.remove('show'); const f=STEPS[activeStep]; if(f) f(); });
+
+    // shorthand: put the scene back into its default "live" state (Earth-framed, rings on, swarm on)
+    const earthState=()=>{ send({type:'scale',on:false}); send({type:'target',to:'earth'}); send({type:'rings',on:true}); send({type:'asteroids',on:true}); };
     const STEPS={
-        primerOne:  ()=>{ send({type:'guide',on:true}); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'focus',name:primerSafe,card:false,preset:'closeup'}); showOverlay(null); },
-        primerHaz:  ()=>{ send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'focus',name:primerHazName,card:false,preset:'closeup'}); showOverlay(null); },
-        population: ()=>{ send({type:'guide',on:true}); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); send({type:'play',on:true}); showOverlay(null); },
-        hazardous:  ()=>{ send({type:'clearFocus'}); send({type:'highlight',names:null}); send({type:'filter',kind:'hazardous'}); send({type:'camera',preset:'overview'}); send({type:'play',on:true}); showOverlay(null); },
-        distribution:()=>{ send({type:'filter',kind:'all'}); send({type:'clearFocus'}); send({type:'camera',preset:'top'}); showOverlay('hist'); },
-        size:       ()=>{ send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'wide'}); showOverlay('scatter'); },
-        thresholds: ()=>{ send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); showOverlay('thresh'); animateLadder(); },
-        chicxulub:  ()=>{ send({type:'filter',kind:'all'}); send({type:'clearFocus'}); send({type:'highlight',names:['Florence','Phaethon','Apophis']}); send({type:'camera',preset:'overview'}); showOverlay('cmp'); },
-        apophis:    ()=>{ showOverlay(null); send({type:'highlight',names:null}); send({type:'filter',kind:'all'});
+        // intro: frame the SUN with the planets, swarm + rings hidden — then progressively
+        // hand off to Earth in the next beat (camera glides, rings fade up, asteroids appear).
+        bearings:   ()=>{ send({type:'scale',on:true}); send({type:'target',to:'sun'}); send({type:'rings',on:false}); send({type:'asteroids',on:false}); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); showOverlay(null); },
+        primerOne:  ()=>{ earthState(); send({type:'highlight',names:null}); send({type:'focus',name:primerSafe,card:false,preset:'closeup'}); showOverlay(null); },
+        primerHaz:  ()=>{ earthState(); send({type:'highlight',names:null}); send({type:'focus',name:primerHazName,card:false,preset:'closeup'}); showOverlay(null); },
+        population: ()=>{ earthState(); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); send({type:'play',on:true}); showOverlay(null); },
+        hazardous:  ()=>{ earthState(); send({type:'clearFocus'}); send({type:'highlight',names:null}); send({type:'filter',kind:'hazardous'}); send({type:'camera',preset:'overview'}); send({type:'play',on:true}); showOverlay(null); },
+        distribution:()=>{ earthState(); send({type:'filter',kind:'all'}); send({type:'clearFocus'}); showOverlay('hist'); },
+        size:       ()=>{ earthState(); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); showOverlay('scatter'); },
+        thresholds: ()=>{ earthState(); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); showOverlay('thresh'); animateLadder(); },
+        chicxulub:  ()=>{ earthState(); send({type:'filter',kind:'all'}); send({type:'clearFocus'}); showOverlay('cmp'); },
+        apophisContext:()=>{ showOverlay(null); earthState(); send({type:'filter',kind:'all'}); send({type:'highlight',names:['Apophis']}); send({type:'focus',name:'Apophis',preset:'wide',jump:false,card:false}); send({type:'date',date:'2028-01-01'}); send({type:'play',on:false}); },
+        apophis:    ()=>{ showOverlay(null); earthState(); send({type:'highlight',names:null}); send({type:'filter',kind:'all'});
                           // start months before the 2029 pass and PLAY THROUGH the flyby so
                           // Apophis sweeps in and hooks around Earth, instead of stacking on it.
                           send({type:'focus',name:'Apophis',preset:'closeup',jump:false});
                           send({type:'date',date:'2028-11-15'});
                           send({type:'speed',idx:1});      // 1 week / s — a readable approach
                           send({type:'play',on:true}); },
-        explore:    ()=>{ showOverlay(null); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'guide',on:false}); send({type:'camera',preset:'overview'}); },
+        explore:    ()=>{ showOverlay(null); send({type:'scale',on:false}); send({type:'target',to:'earth'}); send({type:'rings',on:true}); send({type:'asteroids',on:true}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); },
     };
+    const STEP_ELS=[...document.querySelectorAll('.step')];
+    const scrollyEl=document.getElementById('scrolly');
     let activeStep=null;
+    function runStep(id){
+        if(id===activeStep) return;
+        activeStep=id;
+        document.body.classList.add('in-scrolly');
+        // the scene's own timeline / chrome belongs only to the final free-explore beat —
+        // every other step keeps it hidden, even when scrolling back up.
+        send({type:'guide',on:id!=='explore'});
+        (STEPS[id]||(()=>{}))();
+    }
     function initController(){
-        const steps=[...document.querySelectorAll('.step')];
-        const io=new IntersectionObserver((entries)=>{
-            entries.forEach(e=>{
-                if(e.isIntersecting){
-                    const id=e.target.dataset.step;
-                    steps.forEach(s=>s.classList.toggle('active',s===e.target));
-                    if(id!==activeStep){ activeStep=id; (STEPS[id]||(()=>{}))(); }
-                }
-            });
-        },{rootMargin:'-45% 0px -45% 0px',threshold:0});
-        steps.forEach(s=>io.observe(s));
+        const sync=()=>{
+            const inScrolly=scrollY + innerHeight*0.5 >= scrollyEl.offsetTop;
+            document.body.classList.toggle('in-scrolly', inScrolly);
+            if(!inScrolly){
+                STEP_ELS.forEach(s=>s.classList.remove('active'));
+                activeStep=null;
+                return;
+            }
+            const idx=centeredStepIndex();
+            const step=STEP_ELS[idx];
+            STEP_ELS.forEach(s=>s.classList.toggle('active',s===step));
+            runStep(step.dataset.step);
+        };
+        addEventListener('scroll',sync,{passive:true});
+        addEventListener('resize',sync);
+        sync();
     }
 
-    /* ════════════════════════ KEYBOARD STEP NAVIGATION ════════════════════════ */
-    (function(){
-        const steps=[...document.querySelectorAll('.step')];
-        let currentStep=-1, isKeyScrolling=false;
-
-        function getActiveStepIndex(){
-            // find whichever step is closest to the middle of the viewport
-            const mid=innerHeight/2;
-            let best=-1, bestDist=Infinity;
-            steps.forEach((s,i)=>{
-                const r=s.getBoundingClientRect();
-                const dist=Math.abs((r.top+r.bottom)/2 - mid);
-                if(dist<bestDist){bestDist=dist;best=i;}
-            });
-            return best;
-        }
-
-        function scrollToStep(i){
-            if(i<0||i>=steps.length) return;
-            currentStep=i;
-            isKeyScrolling=true;
-            const target=steps[i].getBoundingClientRect().top+scrollY - innerHeight*0.5 + steps[i].offsetHeight*0.5;
-            window.scrollTo({top:target,behavior:'smooth'});
-            // re-enable mouse scroll after animation completes
-            setTimeout(()=>isKeyScrolling=false, 700);
-        }
-
-        addEventListener('keydown',e=>{
-            if(e.key==='ArrowDown'||e.key==='ArrowUp'){
-                e.preventDefault();
-                const cur=getActiveStepIndex();
-                const next=e.key==='ArrowDown'
-                    ? Math.min(steps.length-1, cur+1)
-                    : Math.max(0, cur-1);
-                scrollToStep(next);
+    /* ════════════════════════ KEYBOARD / REMOTE STEP NAVIGATION ════════════════════════ */
+    function centeredStepIndex(){
+        const mid=innerHeight/2; let best=0, bestDist=Infinity;
+        STEP_ELS.forEach((s,i)=>{ const r=s.getBoundingClientRect();
+            const d=Math.abs((r.top+r.bottom)/2 - mid); if(d<bestDist){bestDist=d;best=i;} });
+        return best;
+    }
+    function scrollToStepIdx(i){
+        i=Math.max(0,Math.min(STEP_ELS.length-1,i));
+        const t=STEP_ELS[i].getBoundingClientRect().top+scrollY - innerHeight*0.5 + STEP_ELS[i].offsetHeight*0.5;
+        window.scrollTo({top:t,behavior:'smooth'});
+    }
+    let wheelStepLock=false;
+    addEventListener('wheel',e=>{
+        if(!document.body.classList.contains('in-scrolly')) return;
+        if(Math.abs(e.deltaY)<12) return;
+        const idx=centeredStepIndex();
+        if(idx>=STEP_ELS.length-1 && e.deltaY>0) return;
+        e.preventDefault();
+        if(wheelStepLock) return;
+        wheelStepLock=true;
+        stepNav(e.deltaY>0?1:-1);
+        setTimeout(()=>wheelStepLock=false,780);
+    },{passive:false});
+    function stepNav(dir){
+        const pro=document.getElementById('prologue');
+        const proStart=pro.offsetTop, proEnd=scrollyEl.offsetTop-innerHeight*0.08;
+        if(dir>0){
+            if(scrollY < pro.offsetTop - innerHeight*0.25){
+                pro.scrollIntoView({behavior:'smooth'}); return;
             }
-        });
-    })();
+            if(scrollY < proEnd){
+                window.scrollTo({top:Math.min(proEnd,scrollY+innerHeight*0.72),behavior:'smooth'}); return;
+            }
+            scrollToStepIdx(centeredStepIndex()+1);
+        }else{
+            const idx=centeredStepIndex();
+            if(scrollY >= scrollyEl.offsetTop - innerHeight*0.25 && idx>0){
+                scrollToStepIdx(idx-1); return;
+            }
+            if(scrollY >= scrollyEl.offsetTop - innerHeight*0.25){
+                window.scrollTo({top:proEnd-innerHeight*0.72,behavior:'smooth'}); return;
+            }
+            if(scrollY > proStart + innerHeight*0.1){
+                window.scrollTo({top:Math.max(proStart,scrollY-innerHeight*0.72),behavior:'smooth'}); return;
+            }
+            if(scrollY >= pro.offsetTop - innerHeight*0.25){
+                document.body.classList.remove('in-scrolly');
+                document.getElementById('hook').scrollIntoView({behavior:'smooth'}); return;
+            }
+        }
+    }
+    addEventListener('keydown',e=>{
+        if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); stepNav(e.key==='ArrowDown'?1:-1); }
+    });
+    // arrow keys forwarded from inside the 3-D scene iframe (keyboard accessibility)
+    addEventListener('message',ev=>{ const m=ev.data;
+        if(m&&m.scene===true&&m.type==='nav') stepNav(m.key==='ArrowDown'?1:-1); });
     </script>
 </body>
 </html>
