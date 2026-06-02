@@ -72,13 +72,13 @@
   .vbtn.zb{width:38px;text-align:center;font-size:15px;padding:5px 0;line-height:1;}
 
   /* selected-asteroid card — flush bottom-left */
-  #card{position:absolute;left:24px;bottom:24px;width:330px;padding:18px 20px;z-index:30;
+  #card{position:absolute;left:24px;bottom:24px;width:330px;padding:18px 20px;z-index:72;
     max-height:calc(100vh - 48px);overflow-y:auto;
     transform:translateY(14px);opacity:0;pointer-events:none;transition:opacity 0.4s,transform 0.4s cubic-bezier(0.22,1,0.36,1);}
   #card::-webkit-scrollbar{width:0;}
   /* in scroll-driven (guided) mode the left edge belongs to the narrative rail,
      so the selected-asteroid card docks on the right instead. */
-  body.guided #card{left:auto;right:24px;}
+  body.guided #card{left:auto;right:24px;bottom:24px;}
   body.embedded #title{display:none!important;}
   #card.show{opacity:1;transform:translateY(0);pointer-events:auto;}
   #card .nm{font-family:var(--serif);font-size:30px;line-height:1.05;margin-bottom:12px;padding-right:22px;}
@@ -164,6 +164,10 @@
   #timeBadge .rate{display:none;}
   #timeBadge .bar{height:3px;border-radius:3px;background:rgba(255,255,255,0.12);margin-top:10px;overflow:hidden;}
   #timeBadge .bar i{display:block;height:100%;width:0;background:var(--cyan);border-radius:3px;}
+  body.guided.timeline-on #timeBadge{display:none;}
+  body.guided.timeline-on #console{left:24px;right:auto;bottom:24px;transform:none;width:min(420px,calc(100vw - 390px));
+    min-width:320px;z-index:39;animation:none;opacity:1;}
+  body.guided.timeline-on #card.show{display:block!important;right:24px;bottom:24px;z-index:72;}
 
   @keyframes fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
   #title{transform:none;} /* let fade handle it */
@@ -300,7 +304,7 @@
   AST.sort((x,y)=>x.event.miss_distance_ld-y.event.miss_distance_ld);
   // Always keep the asteroids the scrollytelling narrative focuses by name,
   // even if they fall outside the closest-MAX_SHOWN cut.
-  const FORCE=new Set(['Apophis','Florence','Phaethon','Bennu','Geographos','Cuno','Midas']);
+  const FORCE=new Set(['Apophis','Ganymed','Florence','Phaethon','Bennu','Geographos','Cuno','Midas']);
   if(AST.length>MAX_SHOWN){
     const keep=AST.slice(0,MAX_SHOWN), have=new Set(keep.map(e=>e.ref.short_name));
     for(const e of AST) if(FORCE.has(e.ref.short_name)&&!have.has(e.ref.short_name)){keep.push(e);have.add(e.ref.short_name);}
@@ -432,6 +436,7 @@
   let speedIdx=1,dir=1,playing=true,simJd=START_JD;
   let selected=null,following=false;
   let guided=false;     // scroll-driven mode: scene chrome hidden, narrative drives state
+  let guidedTimeline=false; // narrative focus beats can show just the time console
   let SPOT=null;        // Set<name> spotlight subset (chart hover linking); null = all
   let lastTick=0;       // throttle for the live-distance readout posted to the parent
   let selDist=0;        // current scene-units distance of the focused asteroid (camera framing)
@@ -744,6 +749,7 @@
     astAlpha += (astAlphaGoal-astAlpha)*0.05;
     ringsAlpha += (ringsAlphaGoal-ringsAlpha)*0.05;
     dots.material.opacity=0.95*astAlpha;
+    dots.material.size=selected?0.22:0.12;
     earthRings.children.forEach(o=>{ o.material.opacity=(o.userData.base||0.2)*ringsAlpha; });
     earthRings.visible=ringsAlpha>0.01;
     if(targetMode==='sun') camTargetGoal.copy(earthHelio).multiplyScalar(-1);
@@ -754,7 +760,10 @@
       // When an asteroid is selected, isolate it: hide every other asteroid so
       // only its trajectory relative to Earth is shown.
       if(el.hidden || (selected && !sel)){
-        el.line.visible=false;dotCol[el.idx*3]=dotCol[el.idx*3+1]=dotCol[el.idx*3+2]=0;continue;
+        el.line.visible=false;el.line.geometry.setDrawRange(0,0);
+        dotPos[el.idx*3]=dotPos[el.idx*3+1]=dotPos[el.idx*3+2]=99999;
+        dotCol[el.idx*3]=dotCol[el.idx*3+1]=dotCol[el.idx*3+2]=0;
+        continue;
       }
       // spotlight: when a chart highlights a subset, the rest fade right back.
       const spotOut = SPOT && !SPOT.has(el.ref.short_name);
@@ -861,7 +870,12 @@
   // postMessage as the reader scrolls. Every command maps onto the same
   // functions the on-screen UI uses, so guided and free interaction share state.
   const CHROME=['title','finder','viewBtns','console'];
-  function showChrome(v){ CHROME.forEach(id=>{const e=$(id); if(e) e.style.display=v?'':'none';}); }
+  function showChrome(v){
+    CHROME.forEach(id=>{
+      const e=$(id); if(!e) return;
+      e.style.display=(v || (id==='console' && guidedTimeline))?'':'none';
+    });
+  }
   function setFilterKind(k){
     filter=k||'all';
     [...chipsEl.children].forEach(c=>c.classList.toggle('on',
@@ -872,7 +886,7 @@
     if(p==='overview'){ deselect(); camGoal({phi:0.16,theta:0,zoom:1.05,spin:0.04}); }
     else if(p==='top'){ camGoal({phi:0.05,theta:0,zoom:1,spin:0}); }
     else if(p==='closeup'){ camGoal({phi:0.46,zoom:0.82,spin:0}); }
-    else if(p==='wide'){ deselect(); camGoal({phi:0.22,theta:0.5,zoom:1.25,spin:0}); }
+    else if(p==='wide'){ camGoal({phi:0.22,theta:0.5,zoom:1.25,spin:0}); }
     else if(p==='free'){ camManual(); }
   }
   function reply(type,data){ try{ parent.postMessage(Object.assign({scene:true,type},data||{}),'*'); }catch(e){} }
@@ -881,9 +895,10 @@
     const m=ev.data; if(!m||m.scene!==true||!m.type) return;   // only our own envelope
     switch(m.type){
       case 'guide':   guided=!!m.on; showChrome(!guided); document.body.classList.toggle('guided',guided); if(guided) tip.style.display='none'; break;
+      case 'timeline': guidedTimeline=!!m.on; document.body.classList.toggle('timeline-on',guidedTimeline); showChrome(!guided); break;
       case 'focus': {
         const el=AST_BY_NAME[(m.name||'').toLowerCase()];
-        if(el){ selectAst(el, m.jump!==false); if(m.card===false) $('card').classList.remove('show'); if(m.preset) preset(m.preset); reply('focused',{name:el.ref.short_name}); }
+        if(el){ selectAst(el, m.jump!==false); if(m.preset) preset(m.preset); if(m.card===false) $('card').classList.remove('show'); else showCard(el); reply('focused',{name:el.ref.short_name}); }
         else reply('absent',{name:m.name});
         break; }
       case 'clearFocus': deselect(); break;

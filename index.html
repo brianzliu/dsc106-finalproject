@@ -118,7 +118,7 @@
         .ovl.show{opacity:1;transform:none;pointer-events:auto;}
         .ovl .panel{height:100%;width:100%;background:none;border:none;border-radius:0;padding:clamp(26px,4vw,62px);
             backdrop-filter:none;box-shadow:none;display:flex;flex-direction:column;justify-content:center;}
-        #ovlCmp .panel{display:grid;grid-template-rows:auto minmax(300px,1fr);align-content:stretch;row-gap:24px;}
+        #ovlCmp .panel{display:grid;grid-template-rows:auto 1fr;align-content:stretch;row-gap:12px;min-height:92vh;}
         .ovl .otitle{font-family:var(--serif);font-size:clamp(28px,2.6vw,40px);line-height:1.06;margin-bottom:6px;color:#fff;letter-spacing:-0.015em;}
         .ovl .ohead{font-family:var(--serif);font-size:20px;line-height:1.15;margin-bottom:3px;}
         .ovl .osub{font-size:clamp(16px,1.25vw,20px);color:var(--soft);line-height:1.5;margin-bottom:20px;max-width:900px;}
@@ -209,20 +209,23 @@
         .annot-line.co{stroke:var(--coral);} .annot-line.cy{stroke:var(--cyan);}
 
         /* comparison beat */
-        .cmp-row{display:flex;align-items:center;gap:10px;height:100%;min-height:520px;margin:0;justify-content:space-between;}
+        .cmp-row{display:flex;align-items:center;gap:10px;height:100%;min-height:0;margin:0;justify-content:space-between;align-self:center;transform:translateY(-3vh);}
         .cmp{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:default;position:relative;}
         .cmp .disc{width:260px;height:260px;display:flex;align-items:center;justify-content:center;position:relative;border-radius:50%;
             transition:transform 0.5s cubic-bezier(0.22,1,0.36,1),background 0.25s ease,box-shadow 0.25s ease;}
-        .cmp.linked .disc::before{content:"";position:absolute;inset:22px;border-radius:50%;background:rgba(127,216,255,0);border:1px solid transparent;transition:all 0.25s ease;}
-        .cmp.linked:hover .disc{transform:translateY(-6px) scale(1.04);background:rgba(127,216,255,0.035);box-shadow:0 0 42px rgba(127,216,255,0.10);}
-        .cmp.linked:hover .disc::before{background:rgba(127,216,255,0.07);border-color:rgba(127,216,255,0.26);}
+        .cmp.linked .disc::before{content:"";position:absolute;inset:14px;border-radius:34px;background:rgba(127,216,255,0);border:1px solid transparent;transition:all 0.25s ease;}
+        .cmp.linked:hover .disc{transform:translateY(-6px) scale(1.04);background:rgba(127,216,255,0.04);box-shadow:0 0 48px rgba(127,216,255,0.16);}
+        .cmp.linked:hover .disc::before{background:rgba(127,216,255,0.08);border-color:rgba(127,216,255,0.34);}
         .cmp .disc svg{position:relative;z-index:1;display:block;width:auto;height:auto;overflow:visible;filter:drop-shadow(0 4px 14px rgba(0,0,0,0.5));}
         .cmp .nm{font-family:var(--serif);font-size:clamp(25px,1.9vw,36px);color:#fff;margin-top:18px;text-align:center;line-height:1.05;letter-spacing:-0.01em;}
         .cmp .dia{font-family:var(--mono);font-size:18px;color:var(--ink);font-weight:600;margin-top:9px;text-align:center;}
         .cmp .dia span{display:block;font-family:var(--sans);font-size:14px;color:var(--soft);font-weight:500;margin-bottom:3px;}
-        .cmp.dino .nm,.cmp.dino .dia{color:var(--coral);}
+        .cmp.dino .nm{color:#fff;}
+        .cmp.dino .dia{color:var(--coral);}
         .cmp.linked{cursor:pointer;} .cmp.linked:hover .nm{color:var(--cyan);}
         .cmp-meta{display:none;}
+        .cmp-focus{transition:opacity 0.24s ease,transform 0.24s ease;}
+        .cmp-focus.swap{opacity:0;transform:translateY(8px);}
         .cmp-meta .mh{font-family:var(--mono);font-size:15px;letter-spacing:0.14em;text-transform:uppercase;color:var(--cyan);margin-bottom:12px;font-weight:600;}
         .cmp-meta .mrow{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:16px;color:var(--dim);margin-top:13px;}
         .cmp-meta .mrow .mval{color:var(--ink);}
@@ -237,15 +240,36 @@
         @keyframes dotreveal{from{opacity:0;transform:scale(0.7);}to{opacity:1;transform:scale(1);}}
 
         /* thresholds ladder */
-        .ladder{display:flex;flex-direction:column;gap:16px;margin:10px 0 2px;}
-        .rung{display:flex;align-items:center;gap:18px;border-radius:10px;padding:4px 6px;transition:background 0.2s;}
-        .rung.linked{cursor:pointer;} .rung.linked:hover,.rung.zero:hover{background:rgba(255,255,255,0.04);}
-        .rung .lab{width:190px;font-size:13px;color:var(--soft);line-height:1.35;}
-        .rung .lab b{display:block;color:var(--ink);font-size:15px;margin-bottom:2px;}
-        .rung .meter{flex:1;height:30px;border-radius:7px;background:rgba(255,255,255,0.05);position:relative;overflow:hidden;}
+        .threshold-layout{display:grid;grid-template-columns:minmax(520px,1.05fr) minmax(430px,0.95fr);gap:34px;align-items:stretch;margin-top:24px;}
+        .ladder{display:flex;flex-direction:column;gap:18px;margin:0;}
+        .rung{display:grid;grid-template-columns:210px 1fr 110px;align-items:center;gap:20px;border-radius:12px;padding:10px 12px;transition:background 0.2s,outline-color 0.2s;}
+        .rung.linked{cursor:pointer;} .rung.linked:hover,.rung.zero:hover,.rung.active{background:rgba(255,255,255,0.055);outline:1px solid rgba(127,216,255,0.22);}
+        .rung .lab{font-size:17px;color:var(--soft);line-height:1.32;}
+        .rung .lab b{display:block;color:var(--ink);font-size:22px;margin-bottom:4px;font-weight:700;}
+        .rung .meter{height:42px;border-radius:9px;background:rgba(255,255,255,0.06);position:relative;overflow:hidden;}
         .rung .meter i{position:absolute;left:0;top:0;height:100%;border-radius:7px;transition:width 0.9s cubic-bezier(0.22,1,0.36,1);}
-        .rung .cnt{font-family:var(--serif);font-size:26px;width:80px;text-align:right;}
+        .rung .cnt{font-family:var(--serif);font-size:38px;text-align:right;}
         .rung.zero .cnt{color:var(--cyan);} .rung.zero .meter i{background:rgba(127,216,255,0.5)!important;}
+        .threshold-detail{display:grid;grid-template-columns:190px 1fr;gap:18px;min-height:520px;border-left:1px solid var(--line);padding-left:28px;}
+        .threshold-list{display:flex;flex-direction:column;gap:9px;max-height:520px;overflow:auto;padding-right:6px;}
+        .threshold-list button{appearance:none;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.035);color:var(--soft);
+            border-radius:10px;padding:10px 12px;text-align:left;font-family:var(--sans);font-size:16px;line-height:1.2;cursor:pointer;transition:background 0.2s,border-color 0.2s,color 0.2s;}
+        .threshold-list button b{display:block;font-family:var(--serif);font-size:23px;line-height:1.05;color:#fff;font-weight:400;letter-spacing:-0.01em;}
+        .threshold-list button span{display:block;margin-top:5px;color:var(--soft);}
+        .threshold-list button.active,.threshold-list button:hover{background:rgba(127,216,255,0.095);border-color:rgba(127,216,255,0.42);color:#fff;}
+        .asteroid-sheet{min-width:0;border:1px solid var(--line);border-radius:18px;background:rgba(7,10,22,0.62);padding:20px;display:grid;grid-template-rows:300px 1fr;gap:12px;}
+        #thresholdAvatar{width:100%;height:300px;display:block;border-radius:14px;background:radial-gradient(circle at 50% 42%,rgba(127,216,255,0.08),transparent 56%);}
+        .sheet-kicker{font-family:var(--mono);font-size:13px;letter-spacing:0.16em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px;}
+        .sheet-title{font-family:var(--serif);font-size:clamp(34px,2.6vw,50px);line-height:1.02;color:#fff;letter-spacing:-0.015em;}
+        .sheet-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+        .sheet-stat{border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;background:rgba(255,255,255,0.035);}
+        .sheet-stat span{display:block;font-size:14px;color:var(--soft);margin-bottom:3px;}
+        .sheet-stat b{display:block;font-family:var(--mono);font-size:22px;color:var(--ink);font-weight:600;}
+        .sheet-stat.haz b{color:var(--coral);}
+        .sheet-action{margin-top:16px;width:100%;border:1px solid rgba(127,216,255,0.42);border-radius:12px;background:rgba(127,216,255,0.11);color:#fff;
+            padding:13px 16px;font-family:var(--mono);font-size:14px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;}
+        .sheet-action:hover{background:rgba(127,216,255,0.18);}
+        @media(max-width:1100px){.threshold-layout{grid-template-columns:1fr}.threshold-detail{border-left:0;padding-left:0;grid-template-columns:1fr}.threshold-list{max-height:220px}}
 
         /* ─────────────────────── WRITEUP / FOOTER ─────────────────────── */
         .closer{position:relative;z-index:3;background:var(--bg);border-top:1px solid var(--line);}
@@ -320,7 +344,21 @@
                 <div class="ovl" id="ovlThresh"><div class="panel">
                     <div class="otitle">Size alone is not the same as danger</div>
                     <div class="osub">Many objects are large enough to damage a region. Far fewer approach Chicxulub scale, and none of the tracked paths here point into Earth.</div>
-                    <div class="ladder" id="ladder"></div>
+                    <div class="threshold-layout">
+                        <div class="ladder" id="ladder"></div>
+                        <div class="threshold-detail" id="thresholdDetail">
+                            <div class="threshold-list" id="thresholdList"></div>
+                            <div class="asteroid-sheet" id="asteroidSheet">
+                                <canvas id="thresholdAvatar" width="360" height="300"></canvas>
+                                <div class="sheet-copy">
+                                    <div class="sheet-kicker" id="sheetKicker">selected asteroid</div>
+                                    <div class="sheet-title" id="sheetTitle">Pick a bar</div>
+                                    <div class="sheet-stats" id="sheetStats"></div>
+                                    <button class="sheet-action" id="sheetAction" type="button">Follow in orbit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div></div>
 
                 <div class="ovl" id="ovlCmp"><div class="panel">
@@ -381,9 +419,9 @@
             </div></section>
 
             <section class="step" data-step="chicxulub"><div class="card">
-                <h2>Some nearby asteroids are enormous.</h2>
-                <p>The comparison on the right is a scale check. Some near-Earth asteroids are larger than the Chicxulub impactor, while others are closer or better known.</p>
-                <p>Those facts have to be read separately. Size, closeness and an Earth-crossing path are different ingredients of risk.</p>
+                <h2 id="cmpNarrTitle" class="cmp-focus">Some nearby asteroids are enormous.</h2>
+                <p id="cmpNarrP1" class="cmp-focus">The comparison on the right is a scale check. Some near-Earth asteroids are larger than the Chicxulub impactor, while others are closer or better known.</p>
+                <p id="cmpNarrP2" class="cmp-focus">Those facts have to be read separately. Size, closeness and an Earth-crossing path are different ingredients of risk.</p>
             </div></section>
 
             <section class="step" data-step="apophisContext"><div class="card">
@@ -676,7 +714,7 @@
 
         buildHistogram(futureLD, bestEv);
         buildScatter(bestEv, meta);
-        buildLadder(meta);
+        buildLadder(meta, bestEv);
         buildComparison(bestEv, meta);
         buildApophisMini();
         initController();
@@ -758,7 +796,7 @@
                 showTip(ev,scaleTip(d),true);})
             .on('mousemove',tipMove)
             .on('mouseleave',function(){d3.select(this).attr('r',5).attr('stroke','rgba(4,6,15,0.8)');hideTip();})
-            .on('click',(ev,d)=>{ hideTip(); revealScene([{type:'highlight',names:null},{type:'filter',kind:'all'},{type:'focus',name:d.name,preset:'closeup',jump:false},{type:'speed',idx:1},{type:'play',on:true}]); });
+            .on('click',(ev,d)=>{ hideTip(); revealScene([{type:'timeline',on:true},{type:'highlight',names:null},{type:'filter',kind:'all'},{type:'focus',name:d.name,preset:'closeup',jump:false,card:true},{type:'speed',idx:1},{type:'play',on:true}]); });
         svg.selectAll('text.mk').data(marks).enter().append('text').attr('class',d=>'annot mk '+(d.haz?'co':'cy'))
             .attr('x',d=>x(d.ld)+9).attr('y',d=>y(d.dia)+3).text(d=>d.name);
         svg.append('g').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).tickValues([0.1,1,10,100]).tickFormat(d=>d+'LD'));
@@ -769,35 +807,153 @@
         svg.append('text').attr('class','annot').attr('x',iw-2).attr('y',y(12000)-6).style('text-anchor','end').text('Chicxulub ≈12km');
     }
 
-    /* ── thresholds ladder — hover a rung for example asteroids at that size ── */
-    function buildLadder(meta){
-        const byDia=[...meta.entries()].filter(([n,m])=>m.dia).map(([n,m])=>({n,dia:m.dia})).sort((a,b)=>b.dia-a.dia);
-        const ex=(lo,hi)=>byDia.filter(d=>d.dia>=lo&&(hi==null||d.dia<hi)).slice(0,6).map(d=>d.n);
-        const rungs=[
-            {lab:'Regional / city', sub:'≥ 140 m', n:1997, c:'#7fd8ff', ex:ex(140,1000)},
-            {lab:'Civilization', sub:'≥ 1 km', n:1286, c:'#ffc861', ex:ex(1000,10000)},
-            {lab:'Mass extinction', sub:'≥ 10 km (Chicxulub)', n:11, c:'#ff7a72', ex:ex(10000,null)},
-            {lab:'On a collision course', sub:'the bar that matters', n:0, c:'#7fd8ff', zero:true, ex:[]},
-        ];
-        const el=document.getElementById('ladder');
-        rungs.forEach(r=>{
-            const row=document.createElement('div');row.className='rung'+(r.zero?' zero':'')+(r.ex.length?' linked':'');
-            row.innerHTML=`<div class="lab"><b>${r.lab}</b>${r.sub}</div>`+
-                `<div class="meter"><i style="width:0;background:${r.c}"></i></div>`+
-                `<div class="cnt">${r.zero?'0':r.n.toLocaleString()}</div>`;
-            el.appendChild(row);
-            row._fill=row.querySelector('i'); row._w=(r.zero?2:Math.max(2,r.n/2000*100));
-            if(r.ex.length){
-                row.addEventListener('mouseenter',ev=>{ send({type:'highlight',names:r.ex});
-                    showTip(ev,flybyTip({count:r.n,label:'rocks',sub:r.sub+' threshold',haz:0,near:r.lab.includes('Regional')}),true); });
-                row.addEventListener('mousemove',tipMove);
-                row.addEventListener('mouseleave',()=>{ hideTip(); send({type:'highlight',names:null}); });
-            } else if(r.zero){
-                row.addEventListener('mouseenter',ev=>{ showTip(ev,flybyTip({count:0,label:'impact paths',sub:'none of the 2,000 hit Earth'}),true); });
-                row.addEventListener('mousemove',tipMove);
-                row.addEventListener('mouseleave',()=>hideTip());
+    let thresholdAvatarApi=null;
+    function thresholdAvatar(){
+        if(thresholdAvatarApi) return thresholdAvatarApi;
+        const canvas=document.getElementById('thresholdAvatar');
+        const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+        renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
+        const scene3=new THREE.Scene();
+        const camera3=new THREE.PerspectiveCamera(34,1,0.1,100);
+        camera3.position.set(0,0,4.2);
+        const group=new THREE.Group(); scene3.add(group);
+        scene3.add(new THREE.AmbientLight(0x8fb4d6,0.9));
+        const key=new THREE.DirectionalLight(0xffffff,1.7); key.position.set(2,2.5,3); scene3.add(key);
+        const rim=new THREE.DirectionalLight(0x7fd8ff,0.9); rim.position.set(-3,1.2,-2); scene3.add(rim);
+        function seeded(name){
+            let h=2166136261; for(let i=0;i<name.length;i++){h^=name.charCodeAt(i);h=Math.imul(h,16777619);}
+            return ()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
+        }
+        function clear(){ while(group.children.length){const o=group.children.pop(); o.geometry?.dispose(); o.material?.dispose?.();} }
+        function setAsteroid({name,dia,haz}){
+            clear();
+            const rnd=seeded(name);
+            const radius=0.34+Math.min(1.2,Math.sqrt(Math.max(1,dia)/12000)*1.05);
+            const geo=new THREE.IcosahedronGeometry(radius,3);
+            const pos=geo.attributes.position;
+            for(let i=0;i<pos.count;i++){
+                const v=new THREE.Vector3(pos.getX(i),pos.getY(i),pos.getZ(i));
+                const f=0.78+rnd()*0.34;
+                v.multiplyScalar(f);
+                pos.setXYZ(i,v.x,v.y,v.z);
             }
+            geo.computeVertexNormals();
+            const mat=new THREE.MeshStandardMaterial({
+                color:haz?0xff7a72:0x9cd7ff,
+                roughness:0.96, metalness:0,
+                emissive:haz?0x2d0706:0x061725,
+                emissiveIntensity:0.24
+            });
+            const rock=new THREE.Mesh(geo,mat); group.add(rock);
+            const craterMat=new THREE.MeshBasicMaterial({color:0x07101b,transparent:true,opacity:0.28,depthWrite:false});
+            for(let i=0;i<5;i++){
+                const c=new THREE.Mesh(new THREE.SphereGeometry(radius*(0.08+rnd()*0.09),18,12),craterMat.clone());
+                const a=rnd()*Math.PI*2, z=rnd()*1.5-0.75, rr=Math.sqrt(1-z*z);
+                c.position.set(Math.cos(a)*rr*radius*0.82,Math.sin(a)*rr*radius*0.82,z*radius*0.82);
+                c.scale.z=0.22; c.lookAt(0,0,0); group.add(c);
+            }
+        }
+        function frame(){
+            requestAnimationFrame(frame);
+            const w=Math.max(240,canvas.clientWidth), h=Math.max(220,canvas.clientHeight);
+            if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio())){
+                renderer.setSize(w,h,false); camera3.aspect=w/h; camera3.updateProjectionMatrix();
+            }
+            group.rotation.y+=0.008; group.rotation.x=0.18+Math.sin(performance.now()*0.0007)*0.04;
+            renderer.render(scene3,camera3);
+        }
+        thresholdAvatarApi={setAsteroid}; requestAnimationFrame(frame);
+        return thresholdAvatarApi;
+    }
+
+    /* ── thresholds ladder — click a threshold, browse the actual filtered asteroids ── */
+    function buildLadder(meta,bestEv){
+        const kmFmt=km=>km>=1e6?(km/1e6).toFixed(km<1e7?2:1)+'M km':Math.round(km).toLocaleString()+' km';
+        const diaFmt=m=>m>=1000?(m/1000).toFixed(m>=10000?1:2).replace(/\.0$/,'')+' km':Math.round(m).toLocaleString()+' m';
+        const rowsFor=(lo,hi)=>[...meta.entries()]
+            .filter(([n,m])=>m.dia>=lo&&(hi==null||m.dia<hi))
+            .map(([name,m])=>({name,...m,ev:bestEv.get(name)}))
+            .sort((a,b)=>b.dia-a.dia);
+        const categories=[
+            {id:'regional',lab:'Regional / city', sub:'diameter ≥ 140 m', c:'#7fd8ff', rows:rowsFor(140,1000)},
+            {id:'civilization',lab:'Civilization scale', sub:'diameter ≥ 1 km', c:'#ffc861', rows:rowsFor(1000,10000)},
+            {id:'extinction',lab:'Chicxulub scale', sub:'diameter ≥ 10 km', c:'#ff7a72', rows:rowsFor(10000,null)},
+            {id:'collision',lab:'Collision course', sub:'paths that hit Earth', c:'#7fd8ff', rows:[], zero:true},
+        ];
+        const el=document.getElementById('ladder'), list=document.getElementById('thresholdList');
+        const sheetTitle=document.getElementById('sheetTitle'), sheetKicker=document.getElementById('sheetKicker');
+        const sheetStats=document.getElementById('sheetStats'), sheetAction=document.getElementById('sheetAction');
+        let activeCat=categories[0], activeAst=null;
+        function followAsteroid(d){
+            if(!d||!d.ev) return;
+            revealScene([
+                {type:'timeline',on:true},
+                {type:'highlight',names:null},
+                {type:'filter',kind:'all'},
+                {type:'focus',name:d.name,preset:'closeup',jump:false,card:true},
+                {type:'speed',idx:1},
+                {type:'play',on:true}
+            ]);
+        }
+        function showProfile(d,follow=false){
+            activeAst=d;
+            if(!d){
+                sheetKicker.textContent='selected threshold';
+                sheetTitle.textContent='No tracked impacts';
+                sheetStats.innerHTML='<div class="sheet-stat"><span>Objects here</span><b>0</b></div><div class="sheet-stat"><span>Path status</span><b>none hit Earth</b></div>';
+                sheetAction.disabled=true;
+                thresholdAvatar().setAsteroid({name:'empty',dia:140,haz:false});
+                return;
+            }
+            const ld=d.ev?.miss_distance_ld, km=ld*384400;
+            sheetKicker.textContent=d.haz?'potentially hazardous asteroid':'near-Earth asteroid';
+            sheetTitle.textContent=d.name;
+            sheetStats.innerHTML=
+                `<div class="sheet-stat"><span>Diameter</span><b>${diaFmt(d.dia)}</b></div>`+
+                `<div class="sheet-stat"><span>Closest pass</span><b>${isFinite(ld)?ld.toFixed(ld<1?2:1)+' LD':'not listed'}</b></div>`+
+                `<div class="sheet-stat"><span>Distance</span><b>${isFinite(ld)?kmFmt(km):'not listed'}</b></div>`+
+                `<div class="sheet-stat ${d.haz?'haz':''}"><span>Status</span><b>${d.haz?'potentially hazardous':'not flagged'}</b></div>`;
+            sheetAction.disabled=false;
+            thresholdAvatar().setAsteroid({name:d.name,dia:d.dia,haz:d.haz});
+            send({type:'highlight',names:[d.name]});
+            if(follow) followAsteroid(d);
+        }
+        function openCategory(cat){
+            activeCat=cat;
+            document.querySelectorAll('#ladder .rung').forEach(r=>r.classList.toggle('active',r.dataset.cat===cat.id));
+            list.innerHTML='';
+            if(cat.zero){
+                list.innerHTML='<button class="active" type="button"><b>No asteroids</b><span>none of these paths hit Earth</span></button>';
+                showProfile(null);
+                send({type:'highlight',names:null});
+                return;
+            }
+            cat.rows.forEach((d,i)=>{
+                const b=document.createElement('button'); b.type='button'; b.className=i===0?'active':'';
+                const ld=d.ev?.miss_distance_ld;
+                b.innerHTML=`<b>${d.name}</b><span>${diaFmt(d.dia)} diameter${isFinite(ld)?' · '+ld.toFixed(ld<1?2:1)+' LD':''}</span>`;
+                b.addEventListener('click',()=>{
+                    list.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+                    b.classList.add('active');
+                    showProfile(d,true);
+                });
+                list.appendChild(b);
+            });
+            showProfile(cat.rows[0],false);
+        }
+        categories.forEach(cat=>{
+            const row=document.createElement('div');row.className='rung'+(cat.zero?' zero':' linked');row.dataset.cat=cat.id;
+            row.innerHTML=`<div class="lab"><b>${cat.lab}</b>${cat.sub}</div>`+
+                `<div class="meter"><i style="width:0;background:${cat.c}"></i></div>`+
+                `<div class="cnt">${cat.zero?'0':cat.rows.length.toLocaleString()}</div>`;
+            el.appendChild(row);
+            row._fill=row.querySelector('i'); row._w=(cat.zero?2:Math.max(2,cat.rows.length/2000*100));
+            row.addEventListener('click',()=>openCategory(cat));
+            row.addEventListener('mouseenter',()=>{ if(cat.rows.length) send({type:'highlight',names:cat.rows.slice(0,20).map(d=>d.name)}); });
+            row.addEventListener('mouseleave',()=>{ if(activeAst) send({type:'highlight',names:[activeAst.name]}); else send({type:'highlight',names:null}); });
         });
+        sheetAction.addEventListener('click',()=>followAsteroid(activeAst));
+        openCategory(activeCat);
     }
     function animateLadder(){ document.querySelectorAll('#ladder .rung').forEach((row,i)=>setTimeout(()=>{row._fill.style.width=row._w+'%';},120*i)); }
 
@@ -816,6 +972,53 @@
             `<stop offset="0%" stop-color="rgba(${rgb},1)"/><stop offset="58%" stop-color="rgba(${rgb},0.66)"/>`+
             `<stop offset="100%" stop-color="rgba(${rgb},0.28)"/></radialGradient></defs>`+
             `<path d="${d}" fill="url(#${gid})" stroke="rgba(${rgb},0.55)" stroke-width="1.1"/>${craters}</svg>`;
+    }
+
+    const CMP_NARR={
+        default:{
+            h:'Some nearby asteroids are enormous.',
+            p1:'The comparison on the right is a scale check. Some near-Earth asteroids are larger than the Chicxulub impactor, while others are closer or better known.',
+            p2:'Those facts have to be read separately. Size, closeness and an Earth-crossing path are different ingredients of risk.'
+        },
+        Chicxulub:{
+            h:'Chicxulub is the reference point.',
+            p1:'The dinosaur-killer was roughly 12 km across. That size made it capable of changing the climate after impact.',
+            p2:'The important part is the combination: it was large, fast, and on a path that actually reached Earth.'
+        },
+        Ganymed:{
+            h:'Ganymed is the giant in this group.',
+            p1:'At about 87 km across, Ganymed is far larger than the Chicxulub impactor. By size alone, it is the most imposing object in this comparison.',
+            p2:'But its closest pass here is about 133 lunar distances away. The scale is enormous; the approach is not close.'
+        },
+        Florence:{
+            h:'Florence is large, but still far away.',
+            p1:'Florence is about 9 km across, close to Chicxulub scale. It is a useful reminder that large near-Earth asteroids do exist.',
+            p2:'Its closest pass in this view is about 19 lunar distances, millions of kilometers from Earth. Large does not mean aimed at us.'
+        },
+        Phaethon:{
+            h:'Phaethon is the fast one.',
+            p1:'Phaethon is nearly 8 km across and moves quickly through the inner solar system. Its speed makes it stand out in this group.',
+            p2:'The closest pass shown here is about 7.7 lunar distances. It comes near in astronomical terms, but the path still misses Earth.'
+        },
+        Apophis:{
+            h:'Apophis is famous because it comes close.',
+            p1:'Apophis is much smaller than the dinosaur-killer, under one kilometer across. Its size is not the Chicxulub story.',
+            p2:'Its 2029 flyby is the unusual part: about 0.10 lunar distances from Earth. That close pass is why it became such a useful case study in measurement.'
+        }
+    };
+    let cmpNarrTimer=null, cmpNarrLocked=null;
+    function updateComparisonNarrative(name='default'){
+        const c=CMP_NARR[name]||CMP_NARR.default;
+        const els=[document.getElementById('cmpNarrTitle'),document.getElementById('cmpNarrP1'),document.getElementById('cmpNarrP2')].filter(Boolean);
+        if(!els.length) return;
+        clearTimeout(cmpNarrTimer);
+        els.forEach(el=>el.classList.add('swap'));
+        cmpNarrTimer=setTimeout(()=>{
+            if(els[0]) els[0].textContent=c.h;
+            if(els[1]) els[1].textContent=c.p1;
+            if(els[2]) els[2].textContent=c.p2;
+            els.forEach(el=>el.classList.remove('swap'));
+        },120);
     }
 
     /* ── Chicxulub vs real-threats comparison (discs scaled by diameter) ── */
@@ -838,10 +1041,31 @@
             d.innerHTML=`<div class="disc">${asteroidSVG(r*2,col,o.name)}</div>`+
                 `<div class="nm">${o.name}</div>`+
                 `<div class="dia"><span>diameter</span>${o.dia>=1000?(o.dia/1000)+' km':o.dia+' m'}</div>`;
-            if(o.link){ d.addEventListener('mouseenter',ev=>{send({type:'highlight',names:[o.link]});showTip(ev,scaleTip({name:o.name,dia:o.dia,ld:o.miss,haz:o.name==='Apophis'}),true);});
-                d.addEventListener('mousemove',tipMove);
-                d.addEventListener('mouseleave',()=>{hideTip();send({type:'highlight',names:['Florence','Phaethon','Apophis']});});
-                d.addEventListener('click',()=>revealScene([{type:'highlight',names:null},{type:'filter',kind:'all'},{type:'focus',name:o.link,preset:'closeup'}])); }
+            d.addEventListener('mouseenter',ev=>{
+                updateComparisonNarrative(o.name);
+                if(o.link) send({type:'highlight',names:[o.link]});
+                showTip(ev,scaleTip({name:o.name,dia:o.dia,ld:o.miss,haz:o.name==='Apophis'||o.dino}),true);
+            });
+            d.addEventListener('mousemove',tipMove);
+            d.addEventListener('mouseleave',()=>{
+                hideTip();
+                if(!cmpNarrLocked) updateComparisonNarrative();
+                send({type:'highlight',names:['Florence','Phaethon','Apophis']});
+            });
+            if(o.link){
+                d.addEventListener('click',()=>{
+                    cmpNarrLocked=o.name;
+                    updateComparisonNarrative(o.name);
+                    revealScene([
+                        {type:'highlight',names:null},
+                        {type:'filter',kind:'all'},
+                        {type:'timeline',on:true},
+                        {type:'focus',name:o.link,preset:'closeup',jump:false,card:true},
+                        {type:'speed',idx:1},
+                        {type:'play',on:true}
+                    ]);
+                });
+            }
             row.appendChild(d);
         });
         // velocity + miss meta bars
@@ -900,30 +1124,32 @@
         chartBack.classList.add('show');
         (cmds||[]).forEach(send);
     }
-    chartBack.addEventListener('click',()=>{ chartBack.classList.remove('show'); const f=STEPS[activeStep]; if(f) f(); });
+    chartBack.addEventListener('click',()=>{ cmpNarrLocked=null; chartBack.classList.remove('show'); const f=STEPS[activeStep]; if(f) f(); });
 
     // shorthand: put the scene back into its default "live" state (Earth-framed, rings on, swarm on)
-    const earthState=()=>{ send({type:'scale',on:false}); send({type:'target',to:'earth'}); send({type:'rings',on:true}); send({type:'asteroids',on:true}); };
+    const earthState=()=>{ send({type:'timeline',on:false}); send({type:'scale',on:false}); send({type:'target',to:'earth'}); send({type:'rings',on:true}); send({type:'asteroids',on:true}); };
+    const focusBeat=(name,preset='closeup',card=true)=>{
+        send({type:'timeline',on:true});
+        send({type:'highlight',names:null});
+        send({type:'filter',kind:'all'});
+        send({type:'focus',name,preset,jump:false,card});
+        send({type:'speed',idx:1});
+        send({type:'play',on:true});
+    };
     const STEPS={
         // intro: frame the SUN with the planets, swarm + rings hidden — then progressively
         // hand off to Earth in the next beat (camera glides, rings fade up, asteroids appear).
         bearings:   ()=>{ send({type:'scale',on:true}); send({type:'target',to:'sun'}); send({type:'rings',on:false}); send({type:'asteroids',on:false}); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); showOverlay(null); },
-        primerOne:  ()=>{ earthState(); send({type:'highlight',names:null}); send({type:'focus',name:primerSafe,card:false,preset:'closeup'}); showOverlay(null); },
-        primerHaz:  ()=>{ earthState(); send({type:'highlight',names:null}); send({type:'focus',name:primerHazName,card:false,preset:'closeup'}); showOverlay(null); },
+        primerOne:  ()=>{ earthState(); focusBeat(primerSafe,'closeup',true); showOverlay(null); },
+        primerHaz:  ()=>{ earthState(); focusBeat(primerHazName,'closeup',true); showOverlay(null); },
         population: ()=>{ earthState(); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); send({type:'play',on:true}); showOverlay(null); },
         hazardous:  ()=>{ earthState(); send({type:'clearFocus'}); send({type:'highlight',names:null}); send({type:'filter',kind:'hazardous'}); send({type:'camera',preset:'overview'}); send({type:'play',on:true}); showOverlay(null); },
         distribution:()=>{ earthState(); send({type:'filter',kind:'all'}); send({type:'clearFocus'}); showOverlay('hist'); },
         size:       ()=>{ earthState(); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); showOverlay('scatter'); },
         thresholds: ()=>{ earthState(); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); showOverlay('thresh'); animateLadder(); },
-        chicxulub:  ()=>{ earthState(); send({type:'filter',kind:'all'}); send({type:'clearFocus'}); showOverlay('cmp'); },
-        apophisContext:()=>{ showOverlay(null); earthState(); send({type:'filter',kind:'all'}); send({type:'highlight',names:['Apophis']}); send({type:'focus',name:'Apophis',preset:'wide',jump:false,card:false}); send({type:'date',date:'2028-01-01'}); send({type:'play',on:false}); },
-        apophis:    ()=>{ showOverlay(null); earthState(); send({type:'highlight',names:null}); send({type:'filter',kind:'all'});
-                          // start months before the 2029 pass and PLAY THROUGH the flyby so
-                          // Apophis sweeps in and hooks around Earth, instead of stacking on it.
-                          send({type:'focus',name:'Apophis',preset:'closeup',jump:false});
-                          send({type:'date',date:'2028-11-15'});
-                          send({type:'speed',idx:1});      // 1 week / s — a readable approach
-                          send({type:'play',on:true}); },
+        chicxulub:  ()=>{ cmpNarrLocked=null; updateComparisonNarrative(); earthState(); send({type:'filter',kind:'all'}); send({type:'clearFocus'}); showOverlay('cmp'); },
+        apophisContext:()=>{ showOverlay(null); earthState(); focusBeat('Apophis','wide',true); },
+        apophis:    ()=>{ showOverlay(null); earthState(); focusBeat('Apophis','closeup',true); },
         explore:    ()=>{ showOverlay(null); send({type:'scale',on:false}); send({type:'target',to:'earth'}); send({type:'rings',on:true}); send({type:'asteroids',on:true}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); },
     };
     const STEP_ELS=[...document.querySelectorAll('.step')];
