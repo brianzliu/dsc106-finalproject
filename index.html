@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbital Theater — Near-Earth Asteroids</title>
+    <title>The Sky Fell Once — Near-Earth Asteroids</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -12,231 +12,645 @@
         :root{
             --bg:#04060f; --panel:#0a0d1a; --line:rgba(255,255,255,0.1);
             --ink:#eef1f8; --dim:rgba(238,241,248,0.55); --faint:rgba(238,241,248,0.32);
-            --amber:#ffc861; --cyan:#6fd3ff; --coral:#ff6b6b;
+            --amber:#ffc861; --cyan:#6fd3ff; --coral:#ff6b6b; --ember:#ff8a3d;
         }
         *{box-sizing:border-box;}
-        body{
-            font-family:"Space Mono",monospace;
-            background:var(--bg);
-            color:var(--ink);
-            margin:0;
-            -webkit-font-smoothing:antialiased;
-        }
-        /* full-bleed simulation hero */
-        .hero{position:relative;width:100%;height:92vh;min-height:560px;border-bottom:1px solid var(--line);}
-        .hero iframe{width:100%;height:100%;border:none;display:block;}
+        html{scroll-behavior:smooth;}
+        body{font-family:"Space Mono",monospace;background:var(--bg);color:var(--ink);margin:0;-webkit-font-smoothing:antialiased;}
+        h1,h2,h3{font-family:"Instrument Serif",serif;font-weight:400;}
+        em{font-style:italic;}
 
-        .section{max-width:920px;margin:0 auto;padding:0 24px;}
-        .lede{text-align:center;padding:64px 24px 30px;}
-        .lede .eyebrow{font-size:11px;letter-spacing:0.34em;text-transform:uppercase;color:var(--amber);}
-        .lede h2{font-family:"Instrument Serif",serif;font-weight:400;font-size:42px;line-height:1.1;margin:14px 0 0;letter-spacing:0.01em;}
-        .lede h2 em{font-style:italic;color:var(--cyan);}
-        .lede p{color:var(--dim);max-width:620px;margin:18px auto 0;font-size:13.5px;line-height:1.8;}
+        /* ─────────────────────── CINEMATIC HOOK ─────────────────────── */
+        .hook{position:relative;width:100%;height:100vh;min-height:600px;overflow:hidden;
+            background:radial-gradient(120% 90% at 50% 8%,#0a1326 0%,#060a16 45%,#04060f 100%);}
+        #hookCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+        .hook-layer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+            justify-content:center;text-align:center;pointer-events:none;padding:0 24px;}
+        .hk-cap{position:absolute;top:14%;left:0;right:0;text-align:center;font-size:11px;letter-spacing:0.42em;
+            text-transform:uppercase;color:var(--amber);opacity:0;transition:opacity 1.1s ease;}
+        .hk-cap.show{opacity:0.85;}
+        .hk-mid{font-style:italic;font-size:clamp(22px,3.4vw,40px);color:#ffd9c2;letter-spacing:0.01em;
+            opacity:0;transform:translateY(10px);transition:opacity 1s ease,transform 1s ease;max-width:680px;line-height:1.25;
+            text-shadow:0 0 40px rgba(255,138,61,0.4);font-family:"Instrument Serif",serif;}
+        .hk-mid.show{opacity:1;transform:none;}
+        .hk-q{opacity:0;transform:translateY(22px);filter:blur(10px);transition:opacity 1.5s ease,transform 1.5s cubic-bezier(0.22,1,0.36,1),filter 1.5s ease;max-width:860px;}
+        .hk-q.show{opacity:1;transform:none;filter:blur(0);}
+        .hk-q h1{animation:none;}
+        .hk-q.show h1{animation:hkrise 1.4s cubic-bezier(0.22,1,0.36,1) both;}
+        @keyframes hkrise{0%{letter-spacing:0.14em;opacity:0;}100%{letter-spacing:0.005em;opacity:1;}}
+        .hk-q .pre{font-size:12px;letter-spacing:0.06em;color:var(--dim);margin-bottom:20px;line-height:1.7;}
+        .hk-q h1{font-size:clamp(34px,6vw,72px);line-height:1.04;margin:0;letter-spacing:0.005em;}
+        .hk-q h1 em{color:var(--coral);}
+        .hk-q .sub{color:var(--dim);font-size:13.5px;line-height:1.8;max-width:560px;margin:26px auto 0;}
+        .scrollcue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);text-align:center;
+            opacity:0;transition:opacity 1.2s ease;pointer-events:auto;cursor:pointer;}
+        .scrollcue.show{opacity:0.7;}
+        .scrollcue .t{font-size:9.5px;letter-spacing:0.3em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;}
+        .scrollcue .arrow{width:1px;height:34px;margin:0 auto;background:linear-gradient(var(--cyan),transparent);animation:cuepulse 1.8s ease-in-out infinite;}
+        @keyframes cuepulse{0%,100%{opacity:0.3;transform:scaleY(0.7);}50%{opacity:1;transform:scaleY(1);}}
+        /* ─────────────────────── PROLOGUE ─────────────────────── */
+        .prologue{position:relative;z-index:3;background:
+            radial-gradient(120% 80% at 50% 0%,#0a1020 0%,#060912 55%,#04060f 100%);
+            border-bottom:1px solid var(--line);padding:14vh 24px 16vh;display:flex;justify-content:center;}
+        .prose{max-width:680px;}
+        .prose > *{opacity:0;transform:translateY(26px);transition:opacity 0.9s ease,transform 0.9s cubic-bezier(0.22,1,0.36,1);}
+        .prose.in > *{opacity:1;transform:none;}
+        .prose.in > *:nth-child(1){transition-delay:0.05s;}
+        .prose.in > *:nth-child(2){transition-delay:0.20s;}
+        .prose.in > *:nth-child(3){transition-delay:0.35s;}
+        .prose.in > *:nth-child(4){transition-delay:0.50s;}
+        .prose.in > *:nth-child(5){transition-delay:0.65s;}
+        .prose .dek{font-family:"Instrument Serif",serif;font-style:italic;font-size:clamp(22px,3vw,30px);
+            color:var(--amber);line-height:1.25;margin:0 0 34px;text-align:center;}
+        .prose p{color:var(--dim);font-size:clamp(15px,1.6vw,17px);line-height:1.95;margin:0 0 22px;}
+        .prose p strong{color:var(--ink);} .prose p em{color:var(--cyan);font-style:italic;}
+        .prologue-cue{display:flex;flex-direction:column;align-items:center;gap:9px;margin-top:46px;color:var(--faint);}
+        .prologue-cue span{font-size:10px;letter-spacing:0.3em;text-transform:uppercase;}
+        .pcarrow{width:1px;height:30px;background:linear-gradient(var(--cyan),transparent);animation:cuepulse 1.8s ease-in-out infinite;}
 
-        .chart-wrap{display:flex;flex-direction:column;align-items:center;padding-bottom:40px;}
-        .chart-head{text-align:center;margin:30px 0 8px;}
-        .chart-head .t{font-family:"Instrument Serif",serif;font-size:27px;}
-        .chart-head .d{color:var(--faint);font-size:12px;letter-spacing:0.04em;margin-top:6px;}
-        .chart-container{
-            background:var(--panel);
-            padding:22px;border-radius:16px;border:1px solid var(--line);
-            box-shadow:0 18px 50px rgba(0,0,0,0.5);position:relative;margin-top:18px;
-        }
-        .tooltip{
-            position:absolute;text-align:left;padding:12px;font-size:12px;
-            background:rgba(7,9,19,0.96);color:#fff;border:1px solid var(--line);
-            border-radius:8px;pointer-events:none;opacity:0;transition:opacity 0.2s;z-index:10;
-            font-family:"Space Mono",monospace;
-        }
-        .axis-label{fill:var(--dim);font-size:13px;letter-spacing:0.04em;}
-        .tick text{fill:var(--faint);font-family:"Space Mono",monospace;font-size:11px;}
-        .tick line,.domain{stroke:rgba(255,255,255,0.18);}
+        /* ─────────────────────── SCROLLYTELLING STAGE ─────────────────────── */
+        .scrolly{position:relative;}
+        .figure{position:sticky;top:0;height:100vh;width:100%;z-index:1;overflow:hidden;background:var(--bg);}
+        .figure iframe{position:absolute;inset:0;width:100%;height:100%;border:none;display:block;}
+        /* gentle left scrim so narrative text stays legible over the scene */
+        .figure::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+            background:linear-gradient(90deg,rgba(4,6,15,0.82) 0%,rgba(4,6,15,0.5) 30%,rgba(4,6,15,0) 56%);
+            opacity:0;transition:opacity 0.6s ease;}
+        .scrolly.guiding .figure::before{opacity:1;}
+
+        /* live readout pill (mirrors the scene's focused-object distance) */
+        .readout{position:absolute;top:26px;left:50%;transform:translateX(-50%);z-index:5;pointer-events:none;
+            display:flex;align-items:center;gap:11px;padding:9px 16px;border-radius:30px;
+            background:rgba(7,9,19,0.78);border:1px solid var(--line);backdrop-filter:blur(12px);
+            font-size:11.5px;letter-spacing:0.04em;opacity:0;transition:opacity 0.5s ease;white-space:nowrap;}
+        .readout.show{opacity:1;}
+        .readout .nm{color:var(--ink);font-weight:700;letter-spacing:0.08em;}
+        .readout .ld{color:var(--cyan);} .readout.haz .ld{color:var(--coral);}
+        .readout .pulse{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:rp 1.4s ease-in-out infinite;}
+        .readout.haz .pulse{background:var(--coral);box-shadow:0 0 10px var(--coral);}
+        @keyframes rp{0%,100%{opacity:0.4;}50%{opacity:1;}}
+
+        /* persistent legend */
+        .legend{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:5;pointer-events:none;
+            display:flex;gap:18px;align-items:center;padding:9px 18px;border-radius:30px;flex-wrap:wrap;justify-content:center;
+            background:rgba(7,9,19,0.74);border:1px solid var(--line);backdrop-filter:blur(12px);
+            font-size:10.5px;color:var(--dim);letter-spacing:0.03em;opacity:0;transition:opacity 0.5s ease;max-width:92vw;}
+        .legend.on{opacity:1;}
+        .legend .li{display:flex;align-items:center;gap:7px;white-space:nowrap;}
+        .legend .sw{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+        .legend .sw.earth{background:#3d7fc4;box-shadow:0 0 7px #3d7fc4;}
+        .legend .sw.safe{background:#dfe7f2;box-shadow:0 0 7px rgba(223,231,242,0.55);}
+        .legend .sw.haz{background:var(--coral);box-shadow:0 0 7px var(--coral);}
+        .legend .sw.line{width:17px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#dfe7f2);}
+
+        /* overlay mount: chart / comparison / ladder panels, right side */
+        .ovl{position:absolute;z-index:4;top:50%;right:30px;transform:translate(28px,-50%);
+            width:min(440px,42vw);opacity:0;pointer-events:none;transition:opacity 0.55s ease,transform 0.55s cubic-bezier(0.22,1,0.36,1);}
+        .ovl.show{opacity:1;transform:translate(0,-50%);pointer-events:auto;}
+        .ovl .panel{background:rgba(9,12,22,0.9);border:1px solid var(--line);border-radius:16px;
+            padding:18px 18px 14px;backdrop-filter:blur(16px);box-shadow:0 20px 60px rgba(0,0,0,0.6);}
+        .ovl .ohead{font-family:"Instrument Serif",serif;font-size:19px;line-height:1.15;margin-bottom:3px;}
+        .ovl .osub{font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:12px;}
+        .ovl .ofoot{font-size:10.5px;color:var(--faint);line-height:1.55;margin-top:11px;}
+        .ovl .ofoot b{color:var(--coral);font-weight:400;}
+        @media(max-width:880px){.ovl{right:50%;transform:translate(50%,0);top:auto;bottom:18px;width:min(440px,92vw);}
+            .ovl.show{transform:translate(50%,0);} }
+
+        /* ─────────────────────── NARRATIVE STEPS (left rail) ─────────────────────── */
+        .steps{position:relative;z-index:3;margin-top:-100vh;pointer-events:none;}
+        .step{min-height:100vh;display:flex;align-items:center;padding:0 5vw;}
+        .step .card{pointer-events:auto;width:min(560px,50vw);max-width:560px;
+            background:linear-gradient(160deg,rgba(10,13,24,0.9),rgba(8,10,20,0.74));
+            border:1px solid var(--line);border-radius:20px;padding:44px 46px 42px;
+            backdrop-filter:blur(11px);box-shadow:0 28px 80px rgba(0,0,0,0.6);
+            opacity:0;transform:translateY(34px);transition:opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1);}
+        .step.active .card{opacity:1;transform:none;}
+        /* staggered reveal of the card's inner elements for a cinematic entrance */
+        .step .card > *{opacity:0;transform:translateY(20px);transition:opacity 0.6s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1);}
+        .step.active .card > *{opacity:1;transform:none;}
+        .step.active .card > *:nth-child(1){transition-delay:0.10s;}
+        .step.active .card > *:nth-child(2){transition-delay:0.20s;}
+        .step.active .card > *:nth-child(3){transition-delay:0.30s;}
+        .step.active .card > *:nth-child(4){transition-delay:0.40s;}
+        .step.active .card > *:nth-child(5){transition-delay:0.50s;}
+        .step .n{font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--faint);margin-bottom:20px;
+            display:flex;align-items:center;gap:11px;}
+        .step .n::before{content:"";width:26px;height:1px;background:var(--amber);}
+        .step h2{font-size:clamp(32px,3.0vw,46px);line-height:1.08;margin:0 0 20px;}
+        .step h2 em{color:var(--cyan);} .step h2 .co{color:var(--coral);font-style:normal;}
+        .step p{color:var(--dim);font-size:15px;line-height:1.9;margin:0 0 18px;}
+        .step p:last-child{margin-bottom:0;}
+        .step p strong{color:var(--ink);} .step p .hl{color:var(--amber);}
+        .step .big{font-family:"Instrument Serif",serif;font-size:52px;line-height:1;color:var(--cyan);margin:4px 0 2px;}
+        .step .big.co{color:var(--coral);}
+        .stat-row{display:flex;gap:26px;margin:22px 0 4px;flex-wrap:wrap;}
+        .stat-row .s .v{font-family:"Instrument Serif",serif;font-size:34px;line-height:1;}
+        .stat-row .s .v.cy{color:var(--cyan);} .stat-row .s .v.co{color:var(--coral);} .stat-row .s .v.am{color:var(--amber);}
+        .stat-row .s .l{font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);margin-top:6px;line-height:1.5;}
+        .cue{font-size:11.5px;color:var(--cyan);letter-spacing:0.03em;margin-top:24px;display:flex;align-items:center;gap:8px;}
+        .cue::before{content:"◉";font-size:9px;}
+        .apo-inset{margin-top:18px;}
+        #apoMini{width:100%;height:auto;display:block;}
+        .apo-cap{font-size:10px;color:var(--faint);text-align:center;margin-top:8px;line-height:1.5;}
+
+        /* ─────────────────────── shared chart bits ─────────────────────── */
+        .tooltip{position:fixed;text-align:left;padding:10px 12px;font-size:11.5px;background:rgba(7,9,19,0.97);color:#fff;
+            border:1px solid var(--line);border-radius:8px;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:50;
+            font-family:"Space Mono",monospace;max-width:230px;}
+        .axis-label{fill:var(--dim);font-size:10.5px;letter-spacing:0.03em;}
+        .tick text{fill:var(--faint);font-family:"Space Mono",monospace;font-size:9.5px;}
+        .tick line,.domain{stroke:rgba(255,255,255,0.16);}
         .grid line{stroke:rgba(255,255,255,0.05);}
-        .loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--faint);letter-spacing:0.08em;}
+        .annot{fill:var(--amber);font-size:9.5px;font-family:"Space Mono",monospace;}
+        .annot.co{fill:var(--coral);} .annot.cy{fill:var(--cyan);}
+        .annot-line{stroke:var(--amber);stroke-dasharray:3 3;stroke-width:1;}
+        .annot-line.co{stroke:var(--coral);} .annot-line.cy{stroke:var(--cyan);}
 
-        .writeup{max-width:760px;margin:20px auto 0;padding:0 24px 90px;line-height:1.85;}
-        .writeup h3{font-family:"Instrument Serif",serif;font-weight:400;font-size:28px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:8px;}
+        /* comparison beat */
+        .cmp-row{display:flex;align-items:flex-end;gap:5px;height:150px;margin:6px 0 2px;justify-content:space-between;}
+        .cmp{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:default;position:relative;}
+        .cmp .disc{border-radius:50%;transition:all 0.6s cubic-bezier(0.22,1,0.36,1);}
+        .cmp .nm{font-size:9px;color:var(--dim);margin-top:9px;text-align:center;line-height:1.3;letter-spacing:0.02em;}
+        .cmp .dia{font-size:10px;color:var(--ink);font-weight:700;margin-top:3px;}
+        .cmp.dino .nm,.cmp.dino .dia{color:var(--coral);}
+        .cmp.linked{cursor:pointer;} .cmp.linked:hover .nm{color:var(--cyan);}
+        .cmp-meta{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);}
+        .cmp-meta .mh{font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);}
+        .cmp-bar{height:5px;border-radius:3px;margin-top:5px;background:rgba(255,255,255,0.07);overflow:hidden;}
+        .cmp-bar i{display:block;height:100%;border-radius:3px;}
+
+        /* thresholds ladder */
+        .ladder{display:flex;flex-direction:column;gap:9px;margin:4px 0 2px;}
+        .rung{display:flex;align-items:center;gap:12px;}
+        .rung .lab{width:128px;font-size:10.5px;color:var(--dim);line-height:1.3;}
+        .rung .lab b{display:block;color:var(--ink);font-size:11.5px;}
+        .rung .meter{flex:1;height:22px;border-radius:5px;background:rgba(255,255,255,0.05);position:relative;overflow:hidden;}
+        .rung .meter i{position:absolute;left:0;top:0;height:100%;border-radius:5px;transition:width 0.9s cubic-bezier(0.22,1,0.36,1);}
+        .rung .cnt{font-family:"Instrument Serif",serif;font-size:17px;width:54px;text-align:right;}
+        .rung.zero .cnt{color:var(--cyan);} .rung.zero .meter i{background:rgba(111,211,255,0.5)!important;}
+
+        /* ─────────────────────── WRITEUP / FOOTER ─────────────────────── */
+        .closer{position:relative;z-index:3;background:var(--bg);border-top:1px solid var(--line);}
+        .writeup{max-width:760px;margin:0 auto;padding:90px 24px;line-height:1.85;}
+        .writeup h2{font-size:34px;margin:0 0 8px;}
+        .writeup .sub{color:var(--dim);font-size:13.5px;margin-bottom:30px;}
+        .writeup h3{font-size:24px;border-bottom:1px solid var(--line);padding-bottom:12px;margin:30px 0 8px;}
         .writeup p{color:var(--dim);font-size:13.5px;}
         .writeup strong{color:var(--ink);}
-        .divider{width:60px;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan));margin:36px auto;border-radius:2px;}
-        footer{text-align:center;color:var(--faint);font-size:11px;letter-spacing:0.1em;padding:30px;border-top:1px solid var(--line);}
+        .divider{width:60px;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan));margin:42px auto;border-radius:2px;}
+        footer{text-align:center;color:var(--faint);font-size:11px;letter-spacing:0.1em;padding:30px;border-top:1px solid var(--line);background:var(--bg);position:relative;z-index:3;}
+        footer a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line);}
+        footer a:hover{color:var(--cyan);}
     </style>
 </head>
 <body>
 
-    <div class="hero">
-        <iframe src="asteroid_orbital_map_clickable.html" title="Orbital Theater — interactive close-approach simulation"></iframe>
-    </div>
-
-    <div class="lede">
-        <div class="eyebrow">The Pickle Farmers · DSC 106</div>
-        <h2>Charting a century of <em>near misses</em></h2>
-        <p>The simulation above propagates 2,000 near-Earth objects from their real Keplerian elements. Scrub through time, change the rate, and watch the clock hold each moment an asteroid sweeps closest to Earth — then explore how the whole population is distributed below.</p>
-    </div>
-
-    <div class="chart-wrap">
-        <div class="chart-head">
-            <div class="t">Orbital Eccentricity vs. Inclination</div>
-            <div class="d">Every near-Earth asteroid · bubble size ∝ diameter · red = potentially hazardous</div>
+    <!-- ═══════════════════ THE HOOK ═══════════════════ -->
+    <section class="hook" id="hook">
+        <canvas id="hookCanvas"></canvas>
+        <div class="hook-layer">
+            <div class="hk-cap" id="hkCap">66 million years ago · The end of the Cretaceous</div>
+            <div class="hk-mid" id="hkMid">A mountain of rock, ten kilometers wide, found the Earth.</div>
+            <div class="hk-q" id="hkQ">
+                <div class="pre">In a single afternoon, three of every four species on Earth were gone. The reign of the dinosaurs — 165 million years long — was over.</div>
+                <h1>It happened to them.<br>Should we be worried it<br><em>happens to us?</em></h1>
+                <div class="sub">Scroll on for an honest, data-backed answer — drawn live from the orbits of 2,000 of Earth's nearest asteroids.</div>
+            </div>
         </div>
-        <div class="chart-container" id="bubbleplot">
-            <div id="loading" class="loading">Parsing NASA asteroid records…</div>
+        <div class="scrollcue" id="scrollCue"><div class="t">Begin</div><div class="arrow"></div></div>
+    </section>
+
+    <!-- ═══════════════════ PROLOGUE (formal written hook) ═══════════════════ -->
+    <section class="prologue">
+        <div class="prose">
+            <p class="dek">The Chicxulub impact, and the question it leaves behind.</p>
+            <p>Sixty-six million years ago, an asteroid between <strong>ten and fifteen kilometers</strong> across struck the shallow sea off what is now Mexico's Yucatán Peninsula. It hit with the force of billions of nuclear weapons. The impact hurled a curtain of vaporized rock around the planet, ignited wildfires across continents, and drew a veil of soot across the sky that blotted out the Sun for years.</p>
+            <p>In the long winter that followed, photosynthesis stalled, food chains collapsed, and an estimated <strong>three-quarters of all species on Earth went extinct</strong> — among them the non-avian dinosaurs that had ruled the planet for 165 million years. It is the most consequential few seconds in the history of life on Earth, and the clearest proof we have that the sky can, on rare occasion, fall.</p>
+            <p>So the anxiety is reasonable. Every time a "potentially hazardous asteroid" makes the news, the same quiet question resurfaces: <em>it happened to them — could it happen to us?</em> This is an attempt to answer that question honestly, using nothing but the real orbital records of the 2,000 asteroids that share Earth's neighborhood. The conclusion, assembled live in the scene below, is reassuring — and the reasons why are worth seeing for yourself.</p>
+            <div class="prologue-cue"><span>Continue</span><div class="pcarrow"></div></div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════ SCROLLY STAGE ═══════════════════ -->
+    <div class="scrolly" id="scrolly">
+        <div class="figure" id="figure">
+            <iframe id="scene" src="asteroid_orbital_map_clickable.html" title="Live near-Earth asteroid scene"></iframe>
+            <div class="readout" id="readout"><span class="pulse"></span><span class="nm" id="roName"></span><span class="ld" id="roLd"></span></div>
+
+            <!-- persistent legend: makes the encoding obvious -->
+            <div class="legend" id="legend">
+                <div class="li"><span class="sw earth"></span>Earth</div>
+                <div class="li"><span class="sw safe"></span>each dot = one asteroid</div>
+                <div class="li"><span class="sw haz"></span>potentially hazardous</div>
+                <div class="li"><span class="sw line"></span>path relative to Earth</div>
+            </div>
+
+            <!-- overlay panels (one shown per relevant step) -->
+            <div class="ovl" id="ovlHist"><div class="panel">
+                <div class="ohead">How far do they really miss?</div>
+                <div class="osub">Every 2026–2125 close approach, by miss distance in lunar distances. Hover a bar to light up those asteroids in orbit.</div>
+                <div id="histChart"></div>
+                <div class="ofoot">Only <b>three</b> of ~14,000 passes dip inside the Moon's orbit — none of them a hit.</div>
+            </div></div>
+
+            <div class="ovl" id="ovlScatter"><div class="panel">
+                <div class="ohead">The big ones stay away</div>
+                <div class="osub">Size vs. closest pass. The top-left "impact" corner — big <em>and</em> close — is empty. Click any point to fly there.</div>
+                <div id="scatterChart"></div>
+                <div class="ofoot">Hover to highlight · click to focus the asteroid in the scene.</div>
+            </div></div>
+
+            <div class="ovl" id="ovlThresh"><div class="panel">
+                <div class="ohead">What it takes to be a threat</div>
+                <div class="osub">How many of our 2,000 neighbors clear each bar — and the one bar none of them clear.</div>
+                <div class="ladder" id="ladder"></div>
+                <div class="ofoot">Clearing a <b>size</b> bar isn't the same as being on a collision course. <b>Zero</b> are.</div>
+            </div></div>
+
+            <div class="ovl" id="ovlCmp"><div class="panel">
+                <div class="ohead">The dinosaur-killer, to scale</div>
+                <div class="osub">Chicxulub beside the biggest rocks that actually come near us. Circles are true relative size.</div>
+                <div class="cmp-row" id="cmpRow"></div>
+                <div class="cmp-meta" id="cmpMeta"></div>
+                <div class="ofoot">Highlighted in orbit: <b>Florence</b>, <b>Phaethon</b>, <b>Apophis</b> — every one a miss.</div>
+            </div></div>
+        </div>
+
+        <!-- narrative steps -->
+        <div class="steps" id="steps">
+
+            <section class="step" data-step="intro"><div class="card">
+                <h2>2,000 rocks share our <em>corner</em> of the solar system</h2>
+                <p>How to read the scene: the blue sphere at the center is <strong>Earth</strong>. <strong>Each glowing dot is one asteroid</strong> — its real orbit, propagated through time by Kepler's equations. The faint trail behind each one is its path <strong>relative to Earth</strong>, and the <span style="color:var(--coral)">red</span> ones are flagged potentially hazardous.</p>
+                <p>It's already running, and every dot is live — hover one to read it. This is the population we're about to interrogate.</p>
+                <div class="cue">Hover any dot in the scene — it responds</div>
+            </div></section>
+
+            <section class="step" data-step="hazardous"><div class="card">
+                <h2><span class="co">533</span> wear the label "potentially hazardous"</h2>
+                <p>That's 27% of them, now glowing red. The label sounds like a verdict. It isn't.</p>
+                <p>It's a <strong>watch-list rule</strong>: any object bigger than ~140 m whose orbit passes within 0.05 AU of Earth's. It means <span class="hl">worth tracking</span> — not <em>predicted to hit</em>. Watch where the red trails go. They bend past Earth, every time.</p>
+            </div></section>
+
+            <section class="step" data-step="distribution"><div class="card">
+                <h2>"Close" is an <em>astronomical</em> word</h2>
+                <p>Of 13,691 projected approaches this century, the <strong>typical</strong> one still misses by <span class="hl">79 lunar distances</span> — nearly 79 times farther than the Moon.</p>
+                <p>Hover the chart's bars to light up the asteroids in each distance band. The crowd lives far out, where the orbits never threaten anything.</p>
+                <div class="cue">Hover the histogram → watch the scene respond</div>
+            </div></section>
+
+            <section class="step" data-step="size"><div class="card">
+                <h2>The close ones are <em>small</em></h2>
+                <p>A Chicxulub-scale strike would need a rock that is both enormous <strong>and</strong> on our doorstep. Plot size against closest pass and that corner sits empty.</p>
+                <p>The genuine giants — <strong>Ganymed</strong>, <strong>Eros</strong> — sit far to the right, never approaching. Click them and the scene will tell you: they aren't even in the near-Earth set.</p>
+                <div class="cue">Click a point → fly to it in orbit</div>
+            </div></section>
+
+            <section class="step" data-step="thresholds"><div class="card">
+                <h2>What an asteroid must <em>clear</em> to matter</h2>
+                <p>Nearly all of them are big enough to ruin a city. About <strong>1,286</strong> could threaten a civilization. Just <span class="hl">11</span> rival the dinosaur-killer in sheer size.</p>
+                <p>But size is only one bar. The other — <strong class="co">being on a collision course</strong> — is one that <span class="hl">zero</span> of our 2,000 clear.</p>
+                <p style="font-size:12px;color:var(--faint)">Select any asteroid yourself later and the scene grades it against these exact thresholds.</p>
+            </div></section>
+
+            <section class="step" data-step="chicxulub"><div class="card">
+                <h2>We host rocks <span class="co">bigger</span> than the one that killed the dinosaurs</h2>
+                <p><strong>Ganymed</strong> is ~87 km — seven times the dinosaur-killer — yet it never crosses Earth's path. Among the ones that <em>do</em> approach, the biggest is <strong>Florence</strong> at ~9 km, and it misses by 7.5 million kilometers.</p>
+                <p>Compare them side by side: size, speed, and how far each one misses. The dinosaur-killer is in a class of its own — and it's the only one that ever actually hit.</p>
+                <div class="cue">Florence · Phaethon · Apophis now lit in orbit</div>
+            </div></section>
+
+            <section class="step" data-step="apophis"><div class="card">
+                <h2>Apophis — the scare that <em>proved the system</em></h2>
+                <p>In 2004 it earned the highest impact odds ever recorded: ~2.7% for 2029. More data arrived, the orbit tightened, and the odds for the next century fell to <span class="hl">zero</span>.</p>
+                <p>On <strong>13 April 2029</strong> it still passes just <strong class="co">38,000 km</strong> away — inside our own satellites, naked-eye bright. The scene is flying there now; watch the live distance fall.</p>
+                <div class="apo-inset">
+                    <svg id="apoMini" viewBox="0 0 460 300" role="img" aria-label="Apophis 2029 pass, to scale"></svg>
+                    <div class="apo-cap">To scale — Apophis threads between Earth and the Moon's orbit, and misses.</div>
+                </div>
+            </div></section>
+
+            <section class="step" data-step="explore"><div class="card">
+                <h2>Interrogate the sky <em>yourself</em></h2>
+                <p>The full controls are back. <strong>Search</strong> "Apophis" and follow it to 2029. <strong>Filter</strong> to the 533 hazardous and confirm every trail misses. <strong>Click</strong> any asteroid for its personal "would it end the world?" verdict.</p>
+                <p>The dinosaurs never had this. We do — and so far, every rock we've measured is just passing through.</p>
+                <div class="cue">Scroll within the scene · drag to orbit · click to assess</div>
+            </div></section>
+
         </div>
     </div>
 
-    <div class="divider"></div>
+    <!-- ═══════════════════ CLOSER ═══════════════════ -->
+    <div class="closer">
+        <div class="writeup">
+            <h2>So — should we be worried?</h2>
+            <div class="sub">The honest, data-backed answer.</div>
+            <p>The dinosaurs never saw it coming. We have catalogued 2,000 of our nearest neighbors, projected ~42,000 of their encounters with Earth, and found a population that misses us by a median of 79 lunar distances — whose giants stay away and whose close passers stay small. The one object that ever truly scared us, Apophis, we de-escalated from record-setting threat to naked-eye spectacle using nothing but patience and better data. The sky fell once. We are now very sure we'll see it coming if it ever tries again.</p>
 
-    <div class="writeup">
-        <h3>Initial Prototype Writeup</h3>
-        <p><strong>1. What have you done so far?</strong></p>
-        <p>Our team, The Pickle Farmers, has finalized our dataset selection, utilizing the NASA Near-Earth Asteroids Dataset to explore orbital mechanics and impact risks. We have established our GitHub repository, deployed our initial GitHub Pages site, and laid out the structural HTML and CSS foundation for our explorable explanation. We built a data pipeline that cleans the 2,000-object dataset, derives each asteroid's orbital ellipse and time-propagation elements, and flattens roughly 42,000 Earth close-approach events into a form our visualizations can consume. On top of that data we have a working Three.js "Orbital Theater" that propagates every asteroid through time with Kepler's equation, lets the user play, scrub, and fast-forward the clock, and automatically holds at each asteroid's closest approach to Earth, alongside a D3 scatter of the population's orbital geometry.</p>
+            <div class="divider"></div>
 
-        <p><strong>2. What will be the most challenging part of your project to design and why?</strong></p>
-        <p>The most challenging aspect of our project will probably be seamlessly integrating the 3D Three.js environment with the 2D D3.js interactive scrollytelling elements. Rendering thousands of orbital trajectories and propagating them every frame poses a real performance risk, so we are carefully balancing detailed rocky meshes for the close approachers against a lightweight animated point cloud for the rest of the population. Additionally, choreographing the camera transitions that move fluidly from a macro view of the near-Earth asteroid population down to an isolated close approach requires complex state management and spatial mathematics. We anticipate that keeping the user oriented during these dynamic zooms, while simultaneously synchronizing the simulation clock, the timeline scrubber, and the informative close-approach annotations, will require heavy iteration on the user experience design.</p>
+            <h3>Initial Prototype Writeup</h3>
+            <p><strong>1. What have you done so far?</strong></p>
+            <p>Our team, The Pickle Farmers, finalized our dataset (NASA's Near-Earth Asteroids set), built a data pipeline that cleans the 2,000-object catalog, derives each asteroid's time-propagation elements, and flattens ~42,000 Earth close-approach events. On top of it we built a Three.js "Orbital Theater" that propagates every asteroid through a century with Kepler's equation — and rebuilt the whole explanation as a scrollytelling experience where that 3-D scene is the persistent centerpiece: the narrative scrolls past it and <strong>drives</strong> it, flying the camera to specific asteroids, toggling the hazardous set, and surfacing scene-linked D3 charts at each beat. Selecting any asteroid grades it live against the impact and extinction thresholds.</p>
+            <p><strong>2. What will be the most challenging part of your project to design and why?</strong></p>
+            <p>The hardest part is the seamless coupling between the scrolling 2-D narrative and the live 3-D scene: propagating thousands of orbits every frame without dropping frames, choreographing camera transitions from a macro view down to a single close approach, and keeping the simulation clock, the chart overlays, and the live annotations all in sync as the reader scrolls. Keeping the user oriented through those dynamic, scroll-driven camera moves is the central UX challenge, and it has taken heavy iteration.</p>
+        </div>
+        <footer>NASA Near-Earth Object data · JPL Small-Body Database · Three.js + D3 · <a href="NARRATIVE.md">Read the full written narrative →</a></footer>
     </div>
 
-    <footer>NASA Near-Earth Object data · JPL Small-Body Database · Built with Three.js + D3</footer>
+    <div class="tooltip" id="tooltip"></div>
 
     <script>
-        const width = 850;
-        const height = 550;
-        const margin = { top: 40, right: 40, bottom: 60, left: 60 };
-        const innerWidth = width - margin.left - margin.right;
-        const innerHeight = height - margin.top - margin.bottom;
-
-        const svg = d3.select("#bubbleplot")
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
-
-        const tooltip = d3.select("body").append("div").attr("class", "tooltip");
-
-        // Load dataset from the data directory
-        d3.csv("data/asteroids_data.csv").then(rawData => {
-            d3.select("#loading").remove();
-
-            // 1. Exact Column Mapping & Parsing
-            let data = rawData.map(d => {
-                return {
-                    name: d.short_name || d.name,
-                    eccentricity: +d.eccentricity,
-                    inclination: +d.inclination,
-                    diameter_max_m: +d.diameter_max_m || 10,
-                    // Convert 1/0 string to true/false boolean
-                    is_hazardous: +d.potentially_hazardous === 1,
-                    orbit_class: d.orbit_class_type
-                };
-            }).filter(d => !isNaN(d.eccentricity) && !isNaN(d.inclination));
-
-            // Optional: Downsample massive datasets to keep the prototype fast
-            if (data.length > 2500) {
-                data = d3.shuffle(data).slice(0, 2500);
+    /* ════════════════════════ HOOK CINEMATIC ════════════════════════ */
+    (function(){
+        const canvas=document.getElementById('hookCanvas'),ctx=canvas.getContext('2d');
+        let W,H,DPR=Math.min(window.devicePixelRatio||1,2),stars=[],embers=[];
+        function resize(){W=canvas.clientWidth;H=canvas.clientHeight;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);buildStars();}
+        function buildStars(){stars=[];const n=Math.floor(W*H/6500);for(let i=0;i<n;i++)stars.push({x:Math.random()*W,y:Math.random()*H*0.82,r:Math.random()*1.3+0.2,tw:Math.random()*6.28,sp:0.6+Math.random()*1.6});}
+        function ridge(x){return Math.sin(x*0.011)*16+Math.sin(x*0.037+1.3)*9+Math.sin(x*0.003)*22;}
+        const T={cap:400,mid:2300,strikeStart:3600,impact:5050,qShow:6700,cueShow:7600,total:8200};
+        let start=null,impactX,impactY;
+        const hkCap=document.getElementById('hkCap'),hkMid=document.getElementById('hkMid'),hkQ=document.getElementById('hkQ'),scrollCue=document.getElementById('scrollCue');
+        function reveal(t){if(t>T.cap)hkCap.classList.add('show');if(t>T.mid)hkMid.classList.add('show');
+            if(t>T.strikeStart+200){hkCap.classList.remove('show');hkMid.classList.remove('show');}
+            if(t>T.qShow)hkQ.classList.add('show');if(t>T.cueShow)scrollCue.classList.add('show');}
+        function draw(now){
+            if(start===null){start=now;impactX=W*0.5;impactY=H*0.74;}
+            const t=now-start;ctx.clearRect(0,0,W,H);
+            const flash=t>T.impact?Math.max(0,1-(t-T.impact)/1400):0;
+            for(const s of stars){const a=0.35+0.55*Math.abs(Math.sin(s.tw+now*0.001*s.sp));ctx.globalAlpha=a*(1-flash*0.7);ctx.fillStyle='#dfe9ff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.fill();}
+            ctx.globalAlpha=1;
+            if(t>T.strikeStart&&t<T.impact+60){
+                const p=(t-T.strikeStart)/(T.impact-T.strikeStart),sx=W*0.92,sy=-40;
+                const ax=sx+(impactX-sx)*p,ay=sy+(impactY-sy)*p,tl=230;
+                const L=Math.hypot(sx-impactX,sy-impactY),tx=ax+(sx-impactX)/L*tl,ty=ay+(sy-impactY)/L*tl;
+                const g=ctx.createLinearGradient(ax,ay,tx,ty);g.addColorStop(0,'rgba(255,240,210,0.95)');g.addColorStop(0.25,'rgba(255,138,61,0.7)');g.addColorStop(1,'rgba(255,80,40,0)');
+                ctx.strokeStyle=g;ctx.lineWidth=3.2+5*p;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(tx,ty);ctx.stroke();
+                const hr=4+7*p,hg=ctx.createRadialGradient(ax,ay,0,ax,ay,hr*3);hg.addColorStop(0,'#fff');hg.addColorStop(0.4,'#ffd29a');hg.addColorStop(1,'rgba(255,138,61,0)');
+                ctx.fillStyle=hg;ctx.beginPath();ctx.arc(ax,ay,hr*3,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ax,ay,hr,0,7);ctx.fill();
             }
+            if(t>T.impact){const e=t-T.impact;
+                if(flash>0){const fg=ctx.createRadialGradient(impactX,impactY,0,impactX,impactY,Math.max(W,H)*1.1);fg.addColorStop(0,`rgba(255,250,235,${0.95*flash})`);fg.addColorStop(0.3,`rgba(255,180,110,${0.6*flash})`);fg.addColorStop(1,'rgba(255,90,40,0)');ctx.fillStyle=fg;ctx.fillRect(0,0,W,H);}
+                const sw=e/900;if(sw<1.6){ctx.globalAlpha=Math.max(0,0.6-sw*0.4);ctx.strokeStyle='#ffd9a0';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(impactX,impactY,sw*W*0.5,sw*W*0.16,0,Math.PI,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+                if(embers.length<90&&e<1600&&Math.random()<0.6)embers.push({x:impactX+(Math.random()-0.5)*40,y:impactY,vx:(Math.random()-0.5)*2.2,vy:-(1.5+Math.random()*3.5),life:1,r:1+Math.random()*2});
+            }
+            for(const m of embers){m.x+=m.vx;m.y+=m.vy;m.vy+=0.018;m.life-=0.006;ctx.globalAlpha=Math.max(0,m.life)*0.9;ctx.fillStyle=m.life>0.5?'#ffd9a0':'#ff6b3d';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,7);ctx.fill();}
+            embers=embers.filter(m=>m.life>0&&m.y<H+20);ctx.globalAlpha=1;
+            const settle=t>T.impact?Math.min(1,(t-T.impact)/1600):0,baseY=H*0.78;
+            ctx.beginPath();ctx.moveTo(0,H);for(let x=0;x<=W;x+=6)ctx.lineTo(x,baseY-ridge(x));ctx.lineTo(W,H);ctx.closePath();
+            ctx.fillStyle=`rgb(${4+settle*6},${6+settle*4},15)`;ctx.fill();
+            if(t>T.impact){const gg=ctx.createLinearGradient(0,baseY-40,0,baseY+10);gg.addColorStop(0,'rgba(255,120,60,0)');gg.addColorStop(1,`rgba(255,110,50,${0.18*Math.max(0,1-(t-T.impact)/3500)})`);ctx.fillStyle=gg;ctx.fillRect(0,baseY-40,W,60);}
+            reveal(t);if(t<T.total+4000)requestAnimationFrame(draw);
+        }
+        scrollCue.addEventListener('click',()=>document.querySelector('.prologue').scrollIntoView({behavior:'smooth'}));
+        addEventListener('resize',resize);resize();requestAnimationFrame(draw);
+    })();
 
-            // 2. Scales
-            const xScale = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.eccentricity) || 1])
-                .range([0, innerWidth])
-                .nice();
+    /* prologue prose reveal on scroll */
+    (function(){const prose=document.querySelector('.prose');if(!prose)return;
+        new IntersectionObserver((es,ob)=>es.forEach(e=>{if(e.isIntersecting){prose.classList.add('in');ob.disconnect();}}),{threshold:0.3}).observe(prose);})();
 
-            const yScale = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.inclination) || 90])
-                .range([innerHeight, 0])
-                .nice();
+    /* ════════════════════════ SCENE BRIDGE (postMessage) ════════════════════════ */
+    const scene=document.getElementById('scene');
+    let sceneReady=false; const cmdQueue=[];
+    function send(msg){ msg.scene=true; if(sceneReady) scene.contentWindow.postMessage(msg,'*'); else cmdQueue.push(msg); }
+    addEventListener('message',ev=>{
+        const m=ev.data; if(!m||m.scene!==true) return;
+        if(m.type==='ready'){ if(!sceneReady){ sceneReady=true;
+            // baseline so the scene's own chrome never flashes before step 1
+            scene.contentWindow.postMessage({scene:true,type:'guide',on:true},'*');
+            scene.contentWindow.postMessage({scene:true,type:'camera',preset:'overview'},'*');
+            cmdQueue.splice(0).forEach(c=>scene.contentWindow.postMessage(c,'*')); } }
+        else if(m.type==='wheel'){ window.scrollBy(0,m.dy); }   // scene forwards page scroll
+        else if(m.type==='tick'){ updateReadout(m.name,m.distLd,m.haz); }
+        else if(m.type==='focused'){ /* name confirmed */ }
+        else if(m.type==='absent'){ flashAbsent(m.name); }
+    });
+    // readout pill
+    const readout=document.getElementById('readout'),roName=document.getElementById('roName'),roLd=document.getElementById('roLd');
+    let roHide;
+    function updateReadout(name,ld,haz){
+        roName.textContent=name; roLd.textContent=' · '+(ld<1?ld.toFixed(2):ld.toFixed(1))+' LD from Earth';
+        readout.classList.toggle('haz',!!haz); readout.classList.add('show');
+        clearTimeout(roHide); roHide=setTimeout(()=>readout.classList.remove('show'),1400);
+    }
+    function flashAbsent(name){
+        roName.textContent=name; roLd.textContent=' · never approaches — not in the near-Earth set';
+        readout.classList.remove('haz'); readout.classList.add('show');
+        clearTimeout(roHide); roHide=setTimeout(()=>readout.classList.remove('show'),2600);
+    }
 
-            // Using square root scale so bubble area accurately reflects physical size
-            const sizeScale = d3.scaleSqrt()
-                .domain([0, d3.max(data, d => d.diameter_max_m) || 1000])
-                .range([3, 22]);
+    /* ════════════════════════ DATA + OVERLAYS + STEP CONTROLLER ════════════════════════ */
+    const tooltip=d3.select('#tooltip');
+    function tipMove(ev){tooltip.style('left',(ev.clientX+14)+'px').style('top',(ev.clientY-10)+'px');}
 
-            // Red for hazardous, Blue for non-hazardous as per proposal specifications
-            const colorScale = d3.scaleOrdinal()
-                .domain([true, false])
-                .range(["#ff6b6b", "#6fd3ff"]);
+    Promise.all([d3.json('data/close_approaches.json'),d3.json('data/asteroids.json')])
+    .then(([caData,astData])=>{
+        const approaches=caData.close_approaches, asteroids=astData.asteroids;
+        // per-asteroid closest future approach (LD + event) and meta
+        const bestEv=new Map(), meta=new Map();
+        for(const c of approaches){ if(c.year<2026||c.year>2125) continue;
+            const cur=bestEv.get(c.name); if(!cur||c.miss_distance_ld<cur.miss_distance_ld) bestEv.set(c.name,c); }
+        for(const a of asteroids) meta.set(a.short_name,{dia:a.diameter_max_m,haz:!!a.potentially_hazardous,cls:a.orbit_class_type});
+        const futureLD=approaches.filter(c=>c.year>=2026&&c.year<=2125&&isFinite(c.miss_distance_ld)).map(c=>c.miss_distance_ld);
 
-            // 3. Background Gridlines
-            svg.append("g")
-                .attr("class", "grid")
-                .attr("transform", `translate(0,${innerHeight})`)
-                .call(d3.axisBottom(xScale).tickSize(-innerHeight).tickFormat(""));
+        buildHistogram(futureLD, bestEv);
+        buildScatter(bestEv, meta);
+        buildLadder();
+        buildComparison(bestEv, meta);
+        buildApophisMini();
+        initController();
+    }).catch(err=>{ console.error(err); });
 
-            svg.append("g")
-                .attr("class", "grid")
-                .call(d3.axisLeft(yScale).tickSize(-innerWidth).tickFormat(""));
+    /* ── overlay histogram (hover bin → highlight scene) ── */
+    function buildHistogram(data, bestEv){
+        const W=404,H=232,m={top:14,right:14,bottom:34,left:40},iw=W-m.left-m.right,ih=H-m.top-m.bottom;
+        const svg=d3.select('#histChart').append('svg').attr('width',W).attr('height',H).append('g').attr('transform',`translate(${m.left},${m.top})`);
+        const maxLD=200,x=d3.scaleLinear().domain([0,maxLD]).range([0,iw]);
+        const bins=d3.bin().domain([0,maxLD]).thresholds(34)(data.filter(d=>d<=maxLD));
+        const y=d3.scaleLinear().domain([0,d3.max(bins,b=>b.length)]).nice().range([ih,0]);
+        const defs=svg.append('defs');const lg=defs.append('linearGradient').attr('id','hg').attr('x1',0).attr('y1',0).attr('x2',0).attr('y2',1);
+        lg.append('stop').attr('offset','0%').attr('stop-color','#6fd3ff');lg.append('stop').attr('offset','100%').attr('stop-color','#2f6f9e');
+        svg.append('g').attr('class','grid').call(d3.axisLeft(y).ticks(4).tickSize(-iw).tickFormat(''));
+        // names by closest LD, for hover linking
+        const named=[...bestEv.values()].map(c=>({name:c.name,ld:c.miss_distance_ld}));
+        svg.selectAll('rect.b').data(bins).enter().append('rect').attr('class','b')
+            .attr('x',d=>x(d.x0)+1).attr('width',d=>Math.max(0,x(d.x1)-x(d.x0)-1.5))
+            .attr('y',d=>y(d.length)).attr('height',d=>ih-y(d.length)).attr('rx',2)
+            .attr('fill',d=>d.x0<5?'var(--coral)':'url(#hg)').attr('opacity',0.9)
+            .on('mouseenter',function(ev,d){d3.select(this).attr('opacity',1);
+                const names=named.filter(o=>o.ld>=d.x0&&o.ld<d.x1).map(o=>o.name);
+                send({type:'highlight',names});
+                tooltip.style('opacity',1).html(`<strong>${d.x0.toFixed(0)}–${d.x1.toFixed(0)} LD</strong><br><span style="color:var(--cyan)">${d.length}</span> approaches<br><span style="color:#888">${(d.x0*0.3844).toFixed(1)}–${(d.x1*0.3844).toFixed(1)}M km</span>`);})
+            .on('mousemove',tipMove)
+            .on('mouseleave',function(){d3.select(this).attr('opacity',0.9);tooltip.style('opacity',0);send({type:'highlight',names:null});});
+        svg.append('g').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6));
+        svg.append('g').call(d3.axisLeft(y).ticks(4));
+        svg.append('text').attr('class','axis-label').attr('x',iw/2).attr('y',ih+30).style('text-anchor','middle').text('miss distance — lunar distances');
+        const xm=x(d3.median(data));
+        svg.append('line').attr('class','annot-line').attr('x1',xm).attr('x2',xm).attr('y1',0).attr('y2',ih);
+        svg.append('text').attr('class','annot').attr('x',xm+5).attr('y',12).text('median '+d3.median(data).toFixed(0)+' LD');
+        svg.append('line').attr('class','annot-line co').attr('x1',x(1)).attr('x2',x(1)).attr('y1',0).attr('y2',ih);
+        svg.append('text').attr('class','annot co').attr('x',x(1)+5).attr('y',ih-4).text('◄ Moon');
+    }
 
-            // 4. Render Axes
-            svg.append("g")
-                .attr("transform", `translate(0,${innerHeight})`)
-                .call(d3.axisBottom(xScale));
+    /* ── overlay scatter (hover → highlight, click → focus) ── */
+    function buildScatter(bestEv, meta){
+        const data=[]; for(const[name,c]of bestEv){const mt=meta.get(name); if(!mt||!mt.dia) continue;
+            data.push({name,ld:c.miss_distance_ld,dia:mt.dia,haz:mt.haz,cls:mt.cls});}
+        const W=404,H=250,m={top:22,right:16,bottom:34,left:44},iw=W-m.left-m.right,ih=H-m.top-m.bottom;
+        const svg=d3.select('#scatterChart').append('svg').attr('width',W).attr('height',H).append('g').attr('transform',`translate(${m.left},${m.top})`);
+        const x=d3.scaleLog().domain([0.08,d3.max(data,d=>d.ld)*1.1]).range([0,iw]);
+        const y=d3.scaleLog().domain([d3.min(data,d=>d.dia)*0.8,d3.max(data,d=>d.dia)*1.15]).range([ih,0]);
+        const r=d3.scaleSqrt().domain([0,d3.max(data,d=>d.dia)]).range([1.1,6.5]);
+        svg.append('g').attr('class','grid').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).tickValues([0.1,1,10,100]).tickSize(-ih).tickFormat(''));
+        svg.append('g').attr('class','grid').call(d3.axisLeft(y).tickValues([100,1000,10000]).tickSize(-iw).tickFormat(''));
+        svg.append('rect').attr('x',0).attr('y',0).attr('width',x(5)).attr('height',y(1000)).attr('fill','rgba(255,107,107,0.05)').attr('stroke','rgba(255,107,107,0.25)').attr('stroke-dasharray','4 4').attr('rx',3);
+        svg.append('text').attr('class','annot co').attr('x',6).attr('y',13).text('big & close — empty');
+        svg.selectAll('circle').data(data).enter().append('circle')
+            .attr('cx',d=>x(d.ld)).attr('cy',d=>y(d.dia)).attr('r',d=>r(d.dia))
+            .attr('fill',d=>d.haz?'var(--coral)':'var(--cyan)').attr('opacity',0.38).attr('stroke','rgba(4,6,15,0.5)').attr('stroke-width',0.3)
+            .style('cursor','pointer')
+            .on('mouseenter',function(ev,d){d3.select(this).attr('opacity',1).attr('stroke','#fff').attr('stroke-width',1.4).raise();
+                send({type:'highlight',names:[d.name]});
+                const km=d.ld*384400;
+                tooltip.style('opacity',1).html(`<strong style="color:${d.haz?'var(--coral)':'var(--cyan)'}">${d.name}</strong> <span style="color:#888">${d.cls}</span><br>${d.dia>=1000?(d.dia/1000).toFixed(1)+' km':Math.round(d.dia)+' m'} · ${d.ld.toFixed(2)} LD<br><span style="color:#888">${km>=1e6?(km/1e6).toFixed(2)+'M km':Math.round(km).toLocaleString()+' km'}</span>`);})
+            .on('mousemove',tipMove)
+            .on('mouseleave',function(){d3.select(this).attr('opacity',0.38).attr('stroke','rgba(4,6,15,0.5)').attr('stroke-width',0.3);tooltip.style('opacity',0);send({type:'highlight',names:null});})
+            .on('click',(ev,d)=>{ send({type:'highlight',names:null}); send({type:'focus',name:d.name,preset:'closeup'}); });
+        svg.append('g').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).tickValues([0.1,1,10,100]).tickFormat(d=>d+'LD'));
+        svg.append('g').call(d3.axisLeft(y).tickValues([100,1000,10000]).tickFormat(d=>d>=1000?(d/1000)+'km':d+'m'));
+        svg.append('line').attr('class','annot-line').attr('x1',0).attr('x2',iw).attr('y1',y(12000)).attr('y2',y(12000)).style('opacity',0.5);
+        svg.append('text').attr('class','annot').attr('x',iw-2).attr('y',y(12000)-5).style('text-anchor','end').text('Chicxulub ≈12km');
+        // label the famous ones
+        data.forEach(d=>{ if(d.name==='Eros'){svg.append('text').attr('class','annot cy').attr('x',x(d.ld)-r(d.dia)-4).attr('y',y(d.dia)+3).style('text-anchor','end').text('Eros');}
+            if(d.name==='Apophis'){svg.append('text').attr('class','annot co').attr('x',x(d.ld)+r(d.dia)+4).attr('y',y(d.dia)+3).text('◄ Apophis');} });
+    }
 
-            svg.append("text")
-                .attr("class", "axis-label")
-                .attr("x", innerWidth / 2)
-                .attr("y", innerHeight + 45)
-                .style("text-anchor", "middle")
-                .text("Orbital Eccentricity (e)");
-
-            svg.append("g").call(d3.axisLeft(yScale));
-
-            svg.append("text")
-                .attr("class", "axis-label")
-                .attr("transform", "rotate(-90)")
-                .attr("x", -innerHeight / 2)
-                .attr("y", -40)
-                .style("text-anchor", "middle")
-                .text("Orbital Inclination (degrees)");
-
-            // 5. Plot Interactive Bubbles
-            svg.selectAll("circle")
-                .data(data)
-                .enter()
-                .append("circle")
-                .attr("cx", d => xScale(d.eccentricity))
-                .attr("cy", d => yScale(d.inclination))
-                .attr("r", d => sizeScale(d.diameter_max_m))
-                .attr("fill", d => colorScale(d.is_hazardous))
-                .attr("opacity", 0.6)
-                .attr("stroke", "#04060f")
-                .attr("stroke-width", 0.7)
-                // Interaction Callbacks
-                .on("mouseover", function(event, d) {
-                    d3.select(this)
-                        .attr("stroke", "#fff")
-                        .attr("stroke-width", 2)
-                        .attr("opacity", 1)
-                        .raise();
-
-                    tooltip.transition().duration(150).style("opacity", 1);
-                    tooltip.html(`
-                        <strong style="font-size: 1.1em; color: ${colorScale(d.is_hazardous)};">${d.name}</strong><br/>
-                        <span style="color: #aaa; font-size: 0.9em;">Class: ${d.orbit_class || 'Unknown'}</span><br/><br/>
-                        <strong>Eccentricity:</strong> ${d.eccentricity.toFixed(3)}<br/>
-                        <strong>Inclination:</strong> ${d.inclination.toFixed(2)}°<br/>
-                        <strong>Max Diameter:</strong> ${d.diameter_max_m.toFixed(0)} m<br/>
-                        <strong>Potentially Hazardous:</strong> ${d.is_hazardous ? "<span style='color:#ff6b6b; font-weight:bold;'>YES</span>" : "No"}
-                    `)
-                    .style("left", (event.pageX + 15) + "px")
-                    .style("top", (event.pageY - 35) + "px");
-                })
-                .on("mousemove", function(event) {
-                    tooltip.style("left", (event.pageX + 15) + "px")
-                           .style("top", (event.pageY - 35) + "px");
-                })
-                .on("mouseout", function(d) {
-                    d3.select(this)
-                        .attr("stroke", "#04060f")
-                        .attr("stroke-width", 0.7)
-                        .attr("opacity", 0.6);
-                    tooltip.transition().duration(400).style("opacity", 0);
-                });
-
-        }).catch(error => {
-            console.error("Error fetching or parsing data:", error);
-            d3.select("#loading")
-              .text("Data loading failure — please run a local web server (CORS).");
+    /* ── thresholds ladder ── */
+    function buildLadder(){
+        const rungs=[
+            {lab:'Regional / city', sub:'≥ 140 m', n:1997, c:'#6fd3ff'},
+            {lab:'Civilization', sub:'≥ 1 km', n:1286, c:'#ffc861'},
+            {lab:'Mass extinction', sub:'≥ 10 km (Chicxulub)', n:11, c:'#ff6b6b'},
+            {lab:'On a collision course', sub:'the bar that matters', n:0, c:'#6fd3ff', zero:true},
+        ];
+        const el=document.getElementById('ladder');
+        rungs.forEach(r=>{
+            const row=document.createElement('div');row.className='rung'+(r.zero?' zero':'');
+            row.innerHTML=`<div class="lab"><b>${r.lab}</b>${r.sub}</div>`+
+                `<div class="meter"><i style="width:0;background:${r.c}"></i></div>`+
+                `<div class="cnt">${r.zero?'0':r.n.toLocaleString()}</div>`;
+            el.appendChild(row);
+            row._fill=row.querySelector('i'); row._w=(r.zero?2:Math.max(2,r.n/2000*100));
         });
+    }
+    function animateLadder(){ document.querySelectorAll('#ladder .rung').forEach((row,i)=>setTimeout(()=>{row._fill.style.width=row._w+'%';},120*i)); }
+
+    /* ── Chicxulub vs real-threats comparison (to scale) ── */
+    function buildComparison(bestEv, meta){
+        // values verified from the dataset; Chicxulub is the external reference
+        const objs=[
+            {name:'Chicxulub', sub:'dinosaur-killer', dia:12000, v:20, miss:0, hit:true, dino:true},
+            {name:'Ganymed', sub:'biggest NEO', dia:87100, v:null, miss:133, link:'Ganymed'},
+            {name:'Florence', sub:'biggest that nears us', dia:9080, v:13.5, miss:19.4, link:'Florence'},
+            {name:'Phaethon', sub:'the fast one', dia:7910, v:34.2, miss:7.7, link:'Phaethon'},
+            {name:'Apophis', sub:'the famous one', dia:370, v:7.4, miss:0.10, link:'Apophis'},
+        ];
+        // size discs to scale (area ∝ diameter), capped for layout
+        const maxD=Math.max(...objs.map(o=>o.dia)), R=d3.scaleSqrt().domain([0,maxD]).range([0,52]);
+        const row=document.getElementById('cmpRow');
+        objs.forEach(o=>{
+            const d=document.createElement('div');d.className='cmp'+(o.dino?' dino':'')+(o.link?' linked':'');
+            const col=o.dino?'255,107,107':(o.dia>=10000?'255,138,61':'111,211,255');
+            const r=Math.max(5,R(o.dia));
+            d.innerHTML=`<div class="disc" style="width:${r*2}px;height:${r*2}px;background:radial-gradient(circle at 38% 35%,rgba(${col},0.95),rgba(${col},0.35));box-shadow:0 0 18px rgba(${col},0.45)"></div>`+
+                `<div class="nm">${o.name}<br><span style="color:var(--faint);font-size:8px">${o.sub}</span></div>`+
+                `<div class="dia">${o.dia>=1000?(o.dia/1000)+' km':o.dia+' m'}</div>`;
+            if(o.link){ d.addEventListener('mouseenter',()=>send({type:'highlight',names:[o.link]}));
+                d.addEventListener('mouseleave',()=>send({type:'highlight',names:['Florence','Phaethon','Apophis']}));
+                d.addEventListener('click',()=>send({type:'focus',name:o.link,preset:'closeup'})); }
+            row.appendChild(d);
+        });
+        // velocity + miss meta bars
+        const maxV=35, maxMiss=140, meta2=document.getElementById('cmpMeta');
+        meta2.innerHTML=
+            `<div><div class="mh">Impact / fly-by speed</div>`+objs.map(o=>o.v==null?'':
+                `<div style="font-size:9px;color:var(--dim);margin-top:7px">${o.name} · ${o.v} km/s<div class="cmp-bar"><i style="width:${o.v/maxV*100}%;background:${o.dino?'var(--coral)':'var(--amber)'}"></i></div></div>`).join('')+`</div>`+
+            `<div><div class="mh">Miss distance (LD)</div>`+objs.map(o=>
+                `<div style="font-size:9px;color:var(--dim);margin-top:7px">${o.name} · ${o.hit?'IMPACT':o.miss+' LD'}<div class="cmp-bar"><i style="width:${o.hit?100:Math.min(100,o.miss/maxMiss*100)}%;background:${o.hit?'var(--coral)':'var(--cyan)'}"></i></div></div>`).join('')+`</div>`;
+    }
+
+    /* ── small Apophis to-scale diagram for the case-study card ──
+       Apophis passes at ~38,000 km — essentially the geostationary altitude — so
+       those two rings coincide. We draw them as one "Apophis pass" band to avoid
+       label collisions, with the Moon's orbit far outside for scale. */
+    function buildApophisMini(){
+        const svg=document.getElementById('apoMini'),NS='http://www.w3.org/2000/svg';
+        const cx=230,cy=232,moonR=196,pxPerKm=moonR/384400;
+        const earthR=10, geoR=42164*pxPerKm, apoR=(6371+38000)*pxPerKm;
+        const E=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+        const txt=(x,y,s,o={})=>{const t=E('text',Object.assign({x,y,'font-size':'9','font-family':'Space Mono'},o));t.textContent=s;svg.appendChild(t);};
+        const defs=E('defs',{});defs.innerHTML=`<radialGradient id="eg" cx="38%" cy="34%" r="75%"><stop offset="0%" stop-color="#7cbcff"/><stop offset="55%" stop-color="#3d7fc4"/><stop offset="100%" stop-color="#173f6e"/></radialGradient>`;svg.appendChild(defs);
+
+        // Moon's orbit — far out, labelled at the apex (centered, never clipped)
+        svg.appendChild(E('path',{d:`M ${cx-moonR} ${cy} A ${moonR} ${moonR} 0 0 1 ${cx+moonR} ${cy}`,fill:'none',stroke:'rgba(111,211,255,0.22)','stroke-width':1,'stroke-dasharray':'2 6'}));
+        txt(cx,cy-moonR-7,"the Moon's orbit — 10× farther out",{fill:'rgba(111,211,255,0.6)','text-anchor':'middle','font-size':'9.5'});
+
+        // faint geostationary tick (same radius as the pass) — unlabelled to stay clean
+        svg.appendChild(E('path',{d:`M ${cx-geoR} ${cy} A ${geoR} ${geoR} 0 0 1 ${cx+geoR} ${cy}`,fill:'none',stroke:'rgba(255,200,97,0.35)','stroke-width':1,'stroke-dasharray':'1 3'}));
+
+        // Apophis trajectory band + apex marker (single, well-spaced label)
+        const apexY=cy-apoR;
+        svg.appendChild(E('path',{d:`M ${cx-150} ${cy-apoR*0.45} Q ${cx} ${apexY-3}, ${cx+150} ${cy-apoR*0.45}`,fill:'none',stroke:'var(--coral)','stroke-width':1.7,'stroke-dasharray':'5 4'}));
+        svg.appendChild(E('circle',{cx,cy:apexY,r:3.6,fill:'#ff6b6b'}));
+        txt(cx,apexY-9,'Apophis · 38,000 km',{fill:'var(--coral)','text-anchor':'middle','font-size':'10','font-weight':'700'});
+        txt(cx,apexY-21,'(skims the geostationary belt)',{fill:'rgba(255,200,97,0.7)','text-anchor':'middle','font-size':'8.5'});
+
+        // Earth
+        svg.appendChild(E('circle',{cx,cy,r:earthR,fill:'url(#eg)'}));
+        txt(cx,cy+earthR+13,'EARTH',{fill:'rgba(238,241,248,0.7)','text-anchor':'middle'});
+    }
+
+    /* ════════════════════════ SCROLL CONTROLLER ════════════════════════ */
+    const OVL={hist:'ovlHist',scatter:'ovlScatter',thresh:'ovlThresh',cmp:'ovlCmp'};
+    function showOverlay(key){ Object.entries(OVL).forEach(([k,elid])=>document.getElementById(elid).classList.toggle('show',k===key)); }
+    const STEPS={
+        intro:      ()=>{ send({type:'guide',on:true}); send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); send({type:'play',on:true}); showOverlay(null); },
+        hazardous:  ()=>{ send({type:'clearFocus'}); send({type:'highlight',names:null}); send({type:'filter',kind:'hazardous'}); send({type:'camera',preset:'overview'}); send({type:'play',on:true}); showOverlay(null); },
+        distribution:()=>{ send({type:'filter',kind:'all'}); send({type:'clearFocus'}); send({type:'camera',preset:'top'}); showOverlay('hist'); },
+        size:       ()=>{ send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'wide'}); showOverlay('scatter'); },
+        thresholds: ()=>{ send({type:'filter',kind:'all'}); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'camera',preset:'overview'}); showOverlay('thresh'); animateLadder(); },
+        chicxulub:  ()=>{ send({type:'filter',kind:'all'}); send({type:'clearFocus'}); send({type:'highlight',names:['Florence','Phaethon','Apophis']}); send({type:'camera',preset:'overview'}); showOverlay('cmp'); },
+        apophis:    ()=>{ showOverlay(null); send({type:'highlight',names:null}); send({type:'filter',kind:'all'});
+                          // start months before the 2029 pass and PLAY THROUGH the flyby so
+                          // Apophis sweeps in and hooks around Earth, instead of stacking on it.
+                          send({type:'focus',name:'Apophis',preset:'closeup',jump:false});
+                          send({type:'date',date:'2028-11-15'});
+                          send({type:'speed',idx:1});      // 1 week / s — a readable approach
+                          send({type:'play',on:true}); },
+        explore:    ()=>{ showOverlay(null); send({type:'highlight',names:null}); send({type:'clearFocus'}); send({type:'guide',on:false}); send({type:'camera',preset:'overview'}); },
+    };
+    let activeStep=null;
+    const legendEl=document.getElementById('legend');
+    function initController(){
+        const steps=[...document.querySelectorAll('.step')];
+        const io=new IntersectionObserver((entries)=>{
+            entries.forEach(e=>{
+                if(e.isIntersecting){
+                    const id=e.target.dataset.step;
+                    steps.forEach(s=>s.classList.toggle('active',s===e.target));
+                    if(id!==activeStep){ activeStep=id; (STEPS[id]||(()=>{}))();
+                        legendEl.classList.toggle('on', id!=='explore'); }
+                }
+            });
+        },{rootMargin:'-45% 0px -45% 0px',threshold:0});
+        steps.forEach(s=>io.observe(s));
+        // toggle the legibility scrim only while a step is on screen
+        const scrolly=document.getElementById('scrolly');
+        new IntersectionObserver((es)=>es.forEach(e=>scrolly.classList.toggle('guiding',e.isIntersecting)),{threshold:0})
+            .observe(document.getElementById('steps'));
+    }
     </script>
 </body>
 </html>

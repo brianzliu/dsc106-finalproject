@@ -67,8 +67,13 @@
   .vbtn.on{border-color:var(--amber);color:var(--amber);}
 
   /* selected-asteroid card — flush bottom-left */
-  #card{position:absolute;left:24px;bottom:24px;width:266px;padding:17px 19px;z-index:30;
+  #card{position:absolute;left:24px;bottom:24px;width:272px;padding:17px 19px;z-index:30;
+    max-height:calc(100vh - 48px);overflow-y:auto;
     transform:translateY(14px);opacity:0;pointer-events:none;transition:opacity 0.4s,transform 0.4s cubic-bezier(0.22,1,0.36,1);}
+  #card::-webkit-scrollbar{width:0;}
+  /* in scroll-driven (guided) mode the left edge belongs to the narrative rail,
+     so the selected-asteroid card docks on the right instead. */
+  body.guided #card{left:auto;right:24px;}
   #card.show{opacity:1;transform:translateY(0);pointer-events:auto;}
   #card .nm{font-family:"Instrument Serif",serif;font-size:25px;line-height:1.05;}
   #card .badge{display:inline-block;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;vertical-align:middle;letter-spacing:0.05em;}
@@ -80,6 +85,27 @@
   #card .miss .v{font-size:22px;color:var(--coral);} #card.safe .miss .v{color:var(--cyan);}
   #card .close{position:absolute;top:13px;right:14px;background:none;border:none;color:var(--faint);font-size:15px;cursor:pointer;line-height:1;}
   #card .close:hover{color:var(--ink);}
+  /* per-asteroid threat assessment */
+  #card .threat{margin-top:15px;padding-top:13px;border-top:1px solid var(--line-soft);}
+  #card .threat .k{margin-bottom:18px;color:var(--amber);}
+  #card .ladder{position:relative;height:26px;margin:0 4px 30px;}
+  #card .ladder .bar{position:absolute;left:0;right:0;top:11px;height:3px;border-radius:3px;
+    background:linear-gradient(90deg,rgba(111,211,255,0.5),rgba(255,200,97,0.6),rgba(255,107,107,0.85));}
+  #card .ladder .chic{position:absolute;top:8px;height:9px;border-radius:2px;background:rgba(255,107,107,0.32);
+    border:1px solid rgba(255,107,107,0.6);}
+  #card .ladder .tier{position:absolute;top:5px;transform:translateX(-50%);}
+  #card .ladder .tier span{display:block;width:1px;height:15px;margin:0 auto;background:rgba(255,255,255,0.35);}
+  #card .ladder .tier i{position:absolute;top:17px;left:50%;transform:translateX(-50%);font-style:normal;
+    font-size:7.5px;letter-spacing:0.04em;color:var(--faint);white-space:nowrap;}
+  #card .ladder .me{position:absolute;top:1px;transform:translateX(-50%);z-index:3;}
+  #card .ladder .me::after{content:'';display:block;width:11px;height:11px;border-radius:50%;margin:0 auto;
+    background:var(--cyan);box-shadow:0 0 10px var(--cyan);border:2px solid var(--bg);}
+  #card .ladder .me.big::after{background:var(--coral);box-shadow:0 0 12px var(--coral);}
+  #card .ladder .me b{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--ink);white-space:nowrap;font-weight:700;}
+  #card .verdict{font-size:10.5px;line-height:1.6;color:var(--dim);}
+  #card .verdict strong{color:var(--ink);font-weight:700;}
+  #card .verdict .safe{color:var(--cyan);} #card .verdict .warn{color:var(--coral);}
+  #card .verdict em{color:var(--amber);font-style:italic;}
 
   /* time console — flush bottom-center */
   #console{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:min(720px,calc(100vw - 360px));
@@ -244,8 +270,16 @@
     AST.push(el);
   }
   AST.sort((x,y)=>x.event.miss_distance_ld-y.event.miss_distance_ld);
-  if(AST.length>MAX_SHOWN) AST.length=MAX_SHOWN;
+  // Always keep the asteroids the scrollytelling narrative focuses by name,
+  // even if they fall outside the closest-MAX_SHOWN cut.
+  const FORCE=new Set(['Apophis','Florence','Phaethon','Bennu','Geographos','Cuno','Midas']);
+  if(AST.length>MAX_SHOWN){
+    const keep=AST.slice(0,MAX_SHOWN), have=new Set(keep.map(e=>e.ref.short_name));
+    for(const e of AST) if(FORCE.has(e.ref.short_name)&&!have.has(e.ref.short_name)){keep.push(e);have.add(e.ref.short_name);}
+    AST.length=0; AST.push(...keep);
+  }
   AST.forEach((el,i)=>el.idx=i);
+  const AST_BY_NAME={}; AST.forEach(el=>AST_BY_NAME[el.ref.short_name.toLowerCase()]=el);
 
   setLoad(78,'Building scene…');
 
@@ -356,6 +390,9 @@
   const SPEEDS=[{l:'1d',v:1},{l:'1w',v:7},{l:'1mo',v:30},{l:'3mo',v:91},{l:'1yr',v:365}];
   let speedIdx=1,dir=1,playing=true,simJd=START_JD;
   let selected=null,following=false;
+  let guided=false;     // scroll-driven mode: scene chrome hidden, narrative drives state
+  let SPOT=null;        // Set<name> spotlight subset (chart hover linking); null = all
+  let lastTick=0;       // throttle for the live-distance readout posted to the parent
 
   const speedsEl=$('speeds');
   SPEEDS.forEach((s,i)=>{const b=document.createElement('button');b.className='spd'+(i===speedIdx?' on':'');
@@ -379,6 +416,11 @@
   const DEFAULT_R=9;
   const camTarget=new THREE.Vector3();
   let actR=DEFAULT_R, desR=DEFAULT_R;
+  // Smooth camera tweening toward goal angles/zoom (driven by scroll presets).
+  // Any direct user interaction cancels the tween so manual control wins.
+  let gTheta=theta, gPhi=phi, gZoom=zoomMul, camTween=false, autoSpin=0;
+  function camGoal(o){ if(o.theta!=null)gTheta=o.theta; if(o.phi!=null)gPhi=o.phi; if(o.zoom!=null)gZoom=o.zoom; if(o.spin!=null)autoSpin=o.spin; camTween=true; }
+  function camManual(){ camTween=false; autoSpin=0; gTheta=theta; gPhi=phi; gZoom=zoomMul; }
   function updateCamera(){
     camera.position.set(
       camTarget.x+actR*Math.sin(phi)*Math.sin(theta),
@@ -409,9 +451,41 @@
         `<div><div class="k">Eccentricity</div><div class="v">${a.eccentricity.toFixed(3)}</div></div>`+
         `<div><div class="k">Inclination</div><div class="v">${a.inclination.toFixed(1)}<small>°</small></div></div>`+
         `<div class="miss"><div class="k">Closest miss distance</div><div class="v">${ev.miss_distance_ld.toFixed(2)} <small style="font-size:11px">LD · ${kmStr}</small></div></div>`+
-      `</div>`;
+      `</div>`+
+      threatHTML(a,ev);
     card.querySelector('.close').onclick=deselect;
     card.classList.add('show');
+  }
+  // ── PER-ASTEROID THRESHOLD / "would it end the world?" ASSESSMENT ────────────
+  // Where this specific object sits on the size ladder, and how far it is from a
+  // collision, relative to the dinosaur-killer (Chicxulub ≈ 10–15 km).
+  function threatHTML(a,ev){
+    const d=a.diameter_max_m||0, ld=ev.miss_distance_ld;
+    // size ladder 100 m → 15 km on a log scale; tiers at 140 m, 1 km, 10 km
+    const lo=Math.log10(100), hi=Math.log10(15000);
+    const pos=v=>Math.max(0,Math.min(100,(Math.log10(Math.max(100,v))-lo)/(hi-lo)*100));
+    const tier=(v,l)=>`<div class="tier" style="left:${pos(v)}%"><span></span><i>${l}</i></div>`;
+    const chic=`<div class="chic" style="left:${pos(10000)}%;width:${pos(15000)-pos(10000)}%"></div>`;
+    const dotPct=pos(d);
+    const tellSize = d>=10000?'extinction-class in size'
+                    : d>=1000?'big enough for a global catastrophe'
+                    : d>=140?'a regional threat at worst'
+                    : 'too small to threaten more than a city';
+    const grow=(12000/Math.max(1,d));
+    const growTxt = d>=12000?'already past the dinosaur-killer size'
+                  : `~${grow<10?grow.toFixed(1):Math.round(grow)}× larger`;
+    const kmMiss = ld*384400;
+    const missTxt = kmMiss>=1e6?(kmMiss/1e6).toFixed(1)+'M km':Math.round(kmMiss).toLocaleString()+' km';
+    return `<div class="threat">`+
+      `<div class="k">Would it end the world?</div>`+
+      `<div class="ladder">${chic}`+
+        `<div class="bar"></div>`+
+        tier(140,'140m')+tier(1000,'1km')+tier(10000,'10km')+
+        `<div class="me ${d>=10000?'big':''}" style="left:${dotPct}%"><b>${d>=1000?(d/1000).toFixed(1)+'km':Math.round(d)+'m'}</b></div>`+
+      `</div>`+
+      `<div class="verdict">This rock is <strong>${tellSize}</strong> — but it <strong class="${ld<1?'warn':'safe'}">misses Earth by ${ld.toFixed(2)} LD (${missTxt})</strong>. `+
+      `To rival the dinosaur-killer it would need to be ${growTxt} <em>and</em> on a direct collision course. It is neither.</div>`+
+    `</div>`;
   }
   function selectAst(el,jumpTime){
     el._orbitR = Math.max(3.0, Math.min(30, el.a * AU * 2.6 + 2.0));
@@ -497,30 +571,37 @@
   addEventListener('mouseup',e=>{
     // only treat as a scene click if the press started on the canvas — clicking
     // UI (play/speed/etc.) must not deselect the followed asteroid.
-    if(downOnCanvas&&!moved){const el=pickDot(e.clientX,e.clientY); if(el)selectAst(el,false); else deselect();}
+    // In guided (scroll-driven) mode, picking still works but an empty click
+    // never deselects, so the narrative's chosen focus is preserved.
+    if(downOnCanvas&&!moved){const el=pickDot(e.clientX,e.clientY); if(el)selectAst(el,false); else if(!guided)deselect();}
     downOnCanvas=false;dragging=false;
   });
   addEventListener('mousemove',e=>{
     if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;
-    if(Math.abs(dx)>2||Math.abs(dy)>2)moved=true;
+    if(Math.abs(dx)>2||Math.abs(dy)>2){moved=true;camManual();}
     theta-=dx*0.008;phi=Math.max(0.02,Math.min(Math.PI/2-0.02,phi+dy*0.008));
     lastX=e.clientX;lastY=e.clientY;
   });
-  canvas.addEventListener('wheel',e=>{e.preventDefault();zoomMul=Math.max(0.18,Math.min(5,zoomMul*(e.deltaY>0?1.1:0.909)));},{passive:false});
+  canvas.addEventListener('wheel',e=>{
+    // In scroll-driven mode the wheel belongs to the PAGE — forward it to the
+    // parent so the narrative advances instead of zooming the scene.
+    if(guided){ try{parent.postMessage({scene:true,type:'wheel',dy:e.deltaY},'*');}catch(_){ } return; }
+    e.preventDefault();camManual();zoomMul=Math.max(0.18,Math.min(5,zoomMul*(e.deltaY>0?1.1:0.909)));
+  },{passive:false});
 
   let pinch=0,tMoved=false;
   canvas.addEventListener('touchstart',e=>{
     if(e.touches.length===1){dragging=true;lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;tMoved=false;}
     if(e.touches.length===2){pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}
   },{passive:false});
-  canvas.addEventListener('touchmove',e=>{e.preventDefault();tMoved=true;
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();tMoved=true;camManual();
     if(e.touches.length===1&&dragging){const dx=e.touches[0].clientX-lastX,dy=e.touches[0].clientY-lastY;
       theta-=dx*0.01;phi=Math.max(0.02,Math.min(Math.PI/2-0.02,phi+dy*0.01));lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;}
     if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
       if(pinch>0)zoomMul=Math.max(0.18,Math.min(5,zoomMul*(pinch/d)));pinch=d;}
   },{passive:false});
   canvas.addEventListener('touchend',e=>{
-    if(!tMoved&&e.changedTouches.length===1){const el=pickDot(e.changedTouches[0].clientX,e.changedTouches[0].clientY);if(el)selectAst(el,false);else deselect();}
+    if(!tMoved&&e.changedTouches.length===1){const el=pickDot(e.changedTouches[0].clientX,e.changedTouches[0].clientY);if(el)selectAst(el,false);else if(!guided)deselect();}
     dragging=false;
   });
 
@@ -589,12 +670,15 @@
       if(el.hidden || (selected && !sel)){
         el.line.visible=false;dotCol[el.idx*3]=dotCol[el.idx*3+1]=dotCol[el.idx*3+2]=0;continue;
       }
-      el.line.visible=true;
+      // spotlight: when a chart highlights a subset, the rest fade right back.
+      const spotOut = SPOT && !SPOT.has(el.ref.short_name);
+      el.line.visible=!spotOut;
       astPos.copy(posAt(el,simJd,AU)).sub(earthHelio);   // Earth-relative position
       dotPos[el.idx*3]=astPos.x;dotPos[el.idx*3+1]=astPos.y;dotPos[el.idx*3+2]=astPos.z;
       const base=el.haz?HAZ_TINT:WHITE, tc=sel?SEL_COL:base;
-      const b=sel?1.8:1.0;
+      const b=sel?1.8:(spotOut?0.14:(SPOT?1.5:1.0));
       dotCol[el.idx*3]=Math.min(1,tc.r*b);dotCol[el.idx*3+1]=Math.min(1,tc.g*b);dotCol[el.idx*3+2]=Math.min(1,tc.b*b);
+      if(spotOut){ el.line.geometry.setDrawRange(0,0); continue; }   // dimmed: no trail
 
       if(advancing&&(el.lastSampJd===null||Math.abs(simJd-el.lastSampJd)>=TRAIL_MIN_STEP)){
         el.samp.push(astPos.x,astPos.y,astPos.z);
@@ -629,7 +713,18 @@
       const distLd=astPos.length()/AU*AU_TO_LD;
       if($('card').classList.contains('show'))
         $('status').innerHTML=`<span class="hot">◉ FOLLOWING</span> ${selected.ref.short_name} · ${distLd.toFixed(1)} LD from Earth now`;
+      // emit a throttled live readout so the scrolling narrative can mirror it
+      if(now-lastTick>110){ lastTick=now;
+        reply('tick',{name:selected.ref.short_name, distLd:+distLd.toFixed(2), haz:selected.haz}); }
     }else{selRing.material.opacity*=0.9;link.material.opacity*=0.9;}
+
+    // smooth camera tweening toward scroll-driven goals (manual input cancels it)
+    if(camTween){
+      if(!autoSpin) theta += (gTheta-theta)*0.06;
+      phi     += (gPhi-phi)*0.06;
+      zoomMul += (gZoom-zoomMul)*0.06;
+    }
+    if(autoSpin) theta += autoSpin*dt;
 
     // camera — Earth locked at origin; following only adjusts zoom to keep both
     // the asteroid and Earth framed together.
@@ -647,6 +742,52 @@
 
     renderer.render(scene,camera);
   }
+
+  // ════════════════ EXTERNAL CONTROL API (scrollytelling driver) ═════════════
+  // The parent page pins this scene as its centerpiece and drives it via
+  // postMessage as the reader scrolls. Every command maps onto the same
+  // functions the on-screen UI uses, so guided and free interaction share state.
+  const CHROME=['title','finder','viewBtns','console'];
+  function showChrome(v){ CHROME.forEach(id=>{const e=$(id); if(e) e.style.display=v?'':'none';}); }
+  function setFilterKind(k){
+    filter=k||'all';
+    [...chipsEl.children].forEach(c=>c.classList.toggle('on',
+      c.textContent.toLowerCase()===(filter==='all'?'all':filter.toLowerCase())));
+    applyFilter(); renderResults($('search').value);
+  }
+  function preset(p){
+    if(p==='overview'){ deselect(); camGoal({phi:0.16,theta:0,zoom:1.05,spin:0.04}); }
+    else if(p==='top'){ camGoal({phi:0.05,theta:0,zoom:1,spin:0}); }
+    else if(p==='closeup'){ camGoal({phi:0.5,zoom:0.5,spin:0}); }
+    else if(p==='wide'){ deselect(); camGoal({phi:0.22,theta:0.5,zoom:1.25,spin:0}); }
+    else if(p==='free'){ camManual(); }
+  }
+  function reply(type,data){ try{ parent.postMessage(Object.assign({scene:true,type},data||{}),'*'); }catch(e){} }
+
+  addEventListener('message',ev=>{
+    const m=ev.data; if(!m||m.scene!==true||!m.type) return;   // only our own envelope
+    switch(m.type){
+      case 'guide':   guided=!!m.on; showChrome(!guided); document.body.classList.toggle('guided',guided); break;
+      case 'focus': {
+        const el=AST_BY_NAME[(m.name||'').toLowerCase()];
+        if(el){ selectAst(el, m.jump!==false); if(m.preset) preset(m.preset); reply('focused',{name:el.ref.short_name}); }
+        else reply('absent',{name:m.name});
+        break; }
+      case 'clearFocus': deselect(); break;
+      case 'filter':    setFilterKind(m.kind); break;
+      case 'highlight': SPOT=(m.names&&m.names.length)?new Set(m.names):null; break;
+      case 'camera':    preset(m.preset); break;
+      case 'date':      simJd=jdFromDateStr(m.date); clearTrails(); setPlaying(false); break;
+      case 'play':      setPlaying(!!m.on); break;
+      case 'speed':     if(m.idx!=null){speedIdx=m.idx;[...speedsEl.children].forEach((c,j)=>c.classList.toggle('on',j===m.idx));updateRate();} break;
+      case 'reset':     deselect(); setFilterKind('all'); preset('overview'); break;
+    }
+  });
+
+  // Announce readiness so the parent can flush any queued scroll commands.
+  reply('ready');
+  setTimeout(()=>reply('ready'),300);   // belt-and-suspenders if parent bound late
+
   requestAnimationFrame(frame);
 })();
 </script>
