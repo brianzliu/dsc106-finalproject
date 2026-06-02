@@ -253,6 +253,7 @@
   const jdFromDateStr=s=>jdFromMs(Date.parse(s+'T00:00:00Z'));
   const MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   const fmtDate=jd=>{const d=new Date(msFromJd(jd));return `${String(d.getUTCDate()).padStart(2,'0')} ${MON[d.getUTCMonth()]} <span class="yr">${d.getUTCFullYear()}</span>`;};
+  const dateStrFromJd=jd=>{const d=new Date(msFromJd(jd));return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;};
   const START_JD=jdFromDateStr('2025-01-01'), END_JD=jdFromDateStr('2125-01-01');
 
   function prep(el){
@@ -291,6 +292,7 @@
   setLoad(60,'Selecting near-Earth objects…');
   const MAX_SHOWN=350;
   const AST=[];
+  const FORCE=new Set(['Apophis','Ganymed','Florence','Phaethon','Bennu','Geographos','Cuno','Midas']);
   for(const a of astData.asteroids){
     if(a.epoch==null||a.mean_motion==null||a.mean_anomaly==null) continue;
     const cas=(CA_BY_NAME[a.short_name]||[]).filter(c=>c.year>=2025&&c.year<=2125);
@@ -301,10 +303,31 @@
       ref:a,event:best,eventJd:jdFromDateStr(best.date),haz:!!a.potentially_hazardous});
     AST.push(el);
   }
+  // Some comparison anchors, especially Ganymed, have orbital elements but no
+  // tabulated 2025-2125 close-approach row in this dataset. Keep them focusable
+  // by sampling their nearest geocentric pass in the display window.
+  for(const a of astData.asteroids){
+    if(!FORCE.has(a.short_name) || AST.some(el=>el.ref.short_name===a.short_name)) continue;
+    if(a.epoch==null||a.mean_motion==null||a.mean_anomaly==null) continue;
+    const el=prep({a:a.semi_major_axis,e:a.eccentricity,inc:a.inclination,node:a.ascending_node_longitude,
+      peri:a.perihelion_argument,M0:a.mean_anomaly,n:a.mean_motion,epoch:a.epoch,ref:a,haz:!!a.potentially_hazardous});
+    let bestJd=START_JD,bestLd=Infinity;
+    for(let jd=START_JD;jd<=END_JD;jd+=10){
+      const d=posAt(el,jd,AU).clone().sub(posAt(EARTH,jd,AU)).length()/AU*AU_TO_LD;
+      if(d<bestLd){bestLd=d;bestJd=jd;}
+    }
+    const p0=posAt(el,bestJd-0.5,AU).clone().sub(posAt(EARTH,bestJd-0.5,AU));
+    const p1=posAt(el,bestJd+0.5,AU).clone().sub(posAt(EARTH,bestJd+0.5,AU));
+    const v=p1.sub(p0).length()/AU*149597870.7/86400;
+    const moidLd=(a.min_orbit_intersection!=null)?a.min_orbit_intersection*AU_TO_LD:bestLd;
+    el.event={name:a.short_name,date:dateStrFromJd(bestJd),year:new Date(msFromJd(bestJd)).getUTCFullYear(),
+      miss_distance_ld:moidLd,miss_distance_au:moidLd/AU_TO_LD,velocity_kms:v};
+    el.eventJd=bestJd;
+    AST.push(el);
+  }
   AST.sort((x,y)=>x.event.miss_distance_ld-y.event.miss_distance_ld);
   // Always keep the asteroids the scrollytelling narrative focuses by name,
   // even if they fall outside the closest-MAX_SHOWN cut.
-  const FORCE=new Set(['Apophis','Ganymed','Florence','Phaethon','Bennu','Geographos','Cuno','Midas']);
   if(AST.length>MAX_SHOWN){
     const keep=AST.slice(0,MAX_SHOWN), have=new Set(keep.map(e=>e.ref.short_name));
     for(const e of AST) if(FORCE.has(e.ref.short_name)&&!have.has(e.ref.short_name)){keep.push(e);have.add(e.ref.short_name);}
