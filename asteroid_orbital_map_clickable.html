@@ -424,7 +424,7 @@
     $('search').value=''; $('results').classList.remove('show');
   }
   function deselect(){
-    selected=null;following=false;clearTrails();
+    selected=null;following=false;
     $('card').classList.remove('show');selRing.material.opacity=0;link.material.opacity=0;
     selTick.style.display='none';$('status').textContent='';
   }
@@ -439,7 +439,9 @@
   function applyFilter(){
     AST.forEach(el=>{
       const m=matchFilter(el);
+      const wasHidden=el.hidden;
       el.hidden=!m; el.line.visible=m;
+      if(wasHidden&&m){el.samp.length=0;el.lastSampJd=null;el.line.geometry.setDrawRange(0,0);}
     });
     if(selected&&selected.hidden) deselect();
   }
