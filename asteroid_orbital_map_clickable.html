@@ -65,6 +65,8 @@
     transition:all 0.2s;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
   .vbtn:hover{border-color:var(--cyan);color:var(--ink);}
   .vbtn.on{border-color:var(--amber);color:var(--amber);}
+  .zoomrow{display:flex;gap:8px;}
+  .vbtn.zb{width:38px;text-align:center;font-size:15px;padding:5px 0;line-height:1;}
 
   /* selected-asteroid card — flush bottom-left */
   #card{position:absolute;left:24px;bottom:24px;width:272px;padding:17px 19px;z-index:30;
@@ -174,6 +176,10 @@
     <button class="vbtn" id="btnScale">Planets</button>
     <button class="vbtn" id="btnTop">Top-down</button>
     <button class="vbtn" id="btnReset">Reset</button>
+    <div class="zoomrow">
+      <button class="vbtn zb" id="btnZoomOut" title="Zoom out">−</button>
+      <button class="vbtn zb" id="btnZoomIn" title="Zoom in">+</button>
+    </div>
   </div>
 
   <div id="card" class="panel"></div>
@@ -257,7 +263,7 @@
   // ── SELECT THE NEAR-EARTH SET ───────────────────────────────────────────────
   // Asteroids with a 2025-2125 Earth approach, closest first; cap for a clean field.
   setLoad(60,'Selecting near-Earth objects…');
-  const MAX_SHOWN=200;
+  const MAX_SHOWN=350;
   const AST=[];
   for(const a of astData.asteroids){
     if(a.epoch==null||a.mean_motion==null||a.mean_anomaly==null) continue;
@@ -393,6 +399,7 @@
   let guided=false;     // scroll-driven mode: scene chrome hidden, narrative drives state
   let SPOT=null;        // Set<name> spotlight subset (chart hover linking); null = all
   let lastTick=0;       // throttle for the live-distance readout posted to the parent
+  let selDist=0;        // current scene-units distance of the focused asteroid (camera framing)
 
   const speedsEl=$('speeds');
   SPEEDS.forEach((s,i)=>{const b=document.createElement('button');b.className='spd'+(i===speedIdx?' on':'');
@@ -431,8 +438,10 @@
   const selTick=$('selTick');
   $('btnScale').onclick=function(){showScale=!showScale;this.classList.toggle('on',showScale);
     scaleObjs.forEach(o=>o.visible=showScale);};
-  $('btnTop').onclick=()=>{phi=0.06;theta=0;};
-  $('btnReset').onclick=()=>{phi=0.12;theta=0;zoomMul=1;deselect();};
+  $('btnTop').onclick=()=>{camManual();phi=0.06;theta=0;};
+  $('btnReset').onclick=()=>{camManual();phi=0.12;theta=0;zoomMul=1;deselect();};
+  $('btnZoomIn').onclick=()=>{camManual();zoomMul=Math.max(0.18,zoomMul*0.82);};
+  $('btnZoomOut').onclick=()=>{camManual();zoomMul=Math.min(5,zoomMul*1.22);};
 
   // ── SELECTION / FOLLOW ──────────────────────────────────────────────────────
   function showCard(el){
@@ -444,13 +453,11 @@
     card.innerHTML=
       `<button class="close" title="Deselect">✕</button>`+
       `<div class="nm">${a.short_name}<span class="badge" style="${el.haz?'background:rgba(255,107,107,.16);color:var(--coral)':'background:rgba(111,211,255,.14);color:var(--cyan)'}">${el.haz?'HAZARDOUS':'SAFE'}</span></div>`+
-      `<div class="cls">${a.orbit_class_type} · closest pass ${ev.date}</div>`+
+      `<div class="cls">${a.orbit_class_type} · ${ev.date}</div>`+
       `<div class="grid">`+
-        `<div><div class="k">Velocity</div><div class="v">${ev.velocity_kms.toFixed(1)} <small>km/s</small></div></div>`+
-        `<div><div class="k">Diameter</div><div class="v">${dia}</div></div>`+
-        `<div><div class="k">Eccentricity</div><div class="v">${a.eccentricity.toFixed(3)}</div></div>`+
-        `<div><div class="k">Inclination</div><div class="v">${a.inclination.toFixed(1)}<small>°</small></div></div>`+
-        `<div class="miss"><div class="k">Closest miss distance</div><div class="v">${ev.miss_distance_ld.toFixed(2)} <small style="font-size:11px">LD · ${kmStr}</small></div></div>`+
+        `<div><div class="k">How big</div><div class="v">${dia}</div></div>`+
+        `<div><div class="k">How fast</div><div class="v">${ev.velocity_kms.toFixed(0)} <small>km/s</small></div></div>`+
+        `<div class="miss"><div class="k">Closest it gets to Earth</div><div class="v">${ev.miss_distance_ld.toFixed(2)} <small style="font-size:11px">LD · ${kmStr}</small></div></div>`+
       `</div>`+
       threatHTML(a,ev);
     card.querySelector('.close').onclick=deselect;
@@ -582,12 +589,14 @@
     theta-=dx*0.008;phi=Math.max(0.02,Math.min(Math.PI/2-0.02,phi+dy*0.008));
     lastX=e.clientX;lastY=e.clientY;
   });
+  const EMBEDDED = window.parent !== window;   // true when hosted in the scrollytelling page
   canvas.addEventListener('wheel',e=>{
-    // In scroll-driven mode the wheel belongs to the PAGE — forward it to the
-    // parent so the narrative advances instead of zooming the scene.
-    if(guided){ try{parent.postMessage({scene:true,type:'wheel',dy:e.deltaY},'*');}catch(_){ } return; }
+    // When embedded, the wheel always belongs to the PAGE — forward it so the
+    // narrative scrolls (both directions) and is never hijacked into zoom.
+    // Zoom is done with the on-screen +/− buttons (and pinch/drag) instead.
+    if(EMBEDDED){ try{parent.postMessage({scene:true,type:'wheel',dy:e.deltaY},'*');}catch(_){ } return; }
     e.preventDefault();camManual();zoomMul=Math.max(0.18,Math.min(5,zoomMul*(e.deltaY>0?1.1:0.909)));
-  },{passive:false});
+  },{passive:true});
 
   let pinch=0,tMoved=false;
   canvas.addEventListener('touchstart',e=>{
@@ -609,7 +618,8 @@
   canvas.addEventListener('mousemove',e=>{
     if(dragging){tip.style.display='none';return;}
     const el=pickDot(e.clientX,e.clientY);
-    if(el){tip.innerHTML=`<b>${el.ref.short_name}</b><br><span class="s">${el.ref.orbit_class_type} · closest ${el.event.miss_distance_ld.toFixed(2)} LD</span>`;
+    if(el){const dm=el.ref.diameter_max_m, dia=dm>=1000?(dm/1000).toFixed(1)+' km':Math.round(dm)+' m';
+      tip.innerHTML=`<b>${el.ref.short_name}</b><br><span class="s">${dia} wide · misses by ${el.event.miss_distance_ld.toFixed(1)} LD</span>`;
       tip.style.display='block';tip.style.left=Math.min(e.clientX+14,innerWidth-210)+'px';tip.style.top=(e.clientY-8)+'px';canvas.style.cursor='pointer';}
     else{tip.style.display='none';canvas.style.cursor='default';}
   });
@@ -675,8 +685,8 @@
       el.line.visible=!spotOut;
       astPos.copy(posAt(el,simJd,AU)).sub(earthHelio);   // Earth-relative position
       dotPos[el.idx*3]=astPos.x;dotPos[el.idx*3+1]=astPos.y;dotPos[el.idx*3+2]=astPos.z;
-      const base=el.haz?HAZ_TINT:WHITE, tc=sel?SEL_COL:base;
-      const b=sel?1.8:(spotOut?0.14:(SPOT?1.5:1.0));
+      const base=el.haz?HAZ_TINT:WHITE, tc=base;   // keep hazard/white colour even when selected
+      const b=sel?1.9:(spotOut?0.14:(SPOT?1.5:1.0));
       dotCol[el.idx*3]=Math.min(1,tc.r*b);dotCol[el.idx*3+1]=Math.min(1,tc.g*b);dotCol[el.idx*3+2]=Math.min(1,tc.b*b);
       if(spotOut){ el.line.geometry.setDrawRange(0,0); continue; }   // dimmed: no trail
 
@@ -704,6 +714,7 @@
     // selected: emphasised ring + bright connector to Earth (origin) + live distance
     if(selected&&!selected.hidden){
       astPos.copy(posAt(selected,simJd,AU)).sub(earthHelio);
+      selDist=astPos.length();                       // scene-units distance, for camera framing
       selRing.position.copy(astPos);selRing.quaternion.copy(camera.quaternion);
       selRing.material.opacity=0.9;selRing.scale.setScalar(1+0.09*Math.sin(now*0.005));
       const pa=link.geometry.attributes.position.array;
@@ -730,7 +741,9 @@
     // the asteroid and Earth framed together.
     camTarget.set(0,0,0);
     if(following&&selected&&!selected.hidden){
-      desR=selected._orbitR*zoomMul;
+      // frame Earth + the asteroid wherever it actually is, so a focused object is
+      // never tiny or off-screen regardless of its real distance.
+      desR=Math.max(selected._orbitR*0.5, selDist*2.4)*zoomMul;
     }else desR=DEFAULT_R*zoomMul;
     actR+=(desR-actR)*0.1;
     updateCamera();
@@ -770,7 +783,7 @@
       case 'guide':   guided=!!m.on; showChrome(!guided); document.body.classList.toggle('guided',guided); break;
       case 'focus': {
         const el=AST_BY_NAME[(m.name||'').toLowerCase()];
-        if(el){ selectAst(el, m.jump!==false); if(m.preset) preset(m.preset); reply('focused',{name:el.ref.short_name}); }
+        if(el){ selectAst(el, m.jump!==false); if(m.card===false) $('card').classList.remove('show'); if(m.preset) preset(m.preset); reply('focused',{name:el.ref.short_name}); }
         else reply('absent',{name:m.name});
         break; }
       case 'clearFocus': deselect(); break;
@@ -784,9 +797,11 @@
     }
   });
 
-  // Announce readiness so the parent can flush any queued scroll commands.
-  reply('ready');
-  setTimeout(()=>reply('ready'),300);   // belt-and-suspenders if parent bound late
+  // Announce readiness (with the actual asteroid roster, so the parent can pick
+  // representative objects that really exist in the scene) and flush queued commands.
+  function sendReady(){ reply('ready',{list:AST.map(el=>({n:el.ref.short_name,h:el.haz?1:0,ld:el.event.miss_distance_ld}))}); }
+  sendReady();
+  setTimeout(sendReady,300);   // belt-and-suspenders if parent bound late
 
   requestAnimationFrame(frame);
 })();
