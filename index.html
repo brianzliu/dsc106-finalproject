@@ -548,7 +548,6 @@
                 <summary>How we built this</summary>
                 <p>Our team, the Pickle Farmers, started from NASA's Near-Earth Asteroids dataset and built a pipeline that cleans the 2,000-object catalog, derives each asteroid's time-propagation elements, and flattens roughly 42,000 Earth close-approach events. On top of that sits a Three.js orbital theater that propagates every asteroid across a century using Kepler's equation. We wrapped the whole explanation in a scrollytelling format where that 3-D scene stays on stage the entire time. The narrative scrolls alongside it and <strong>drives</strong> it, flying the camera to named asteroids, toggling the hazardous set, and surfacing linked D3 charts at each beat. Select any asteroid and it gets graded live against the impact and extinction thresholds.</p>
                 <p>The hard part was the coupling between the scrolling narrative and the live scene. We had to propagate thousands of orbits every frame without dropping below 60&nbsp;fps, choreograph camera moves from a system-wide view down to a single close pass, and keep the clock, the chart overlays, and the on-screen labels in sync as the reader scrolls. Keeping a reader oriented through those moving, scroll-driven shots was the central design problem, and it took a lot of iteration to land.</p>
-                <p><a href="NARRATIVE.md">Read the full written narrative →</a></p>
             </details>
         </div>
     </div>
