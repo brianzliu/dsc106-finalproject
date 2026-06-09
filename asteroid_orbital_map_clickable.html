@@ -422,8 +422,12 @@
   const TRAIL_K=100;            // samples per trail
   const TRAIL_MIN_STEP=0.4;    // min sim-days between samples
 
-  // one Points object for all asteroid heads
-  const dotPos=new Float32Array(AST.length*3), dotCol=new Float32Array(AST.length*3);
+  // one Points object for all asteroid heads. The swarm fills slots 0..DOT_BASE-1;
+  // LAZY_CAP spare slots let us materialise any other catalogued asteroid on demand
+  // (so charts can focus / highlight objects outside the closest-N swarm).
+  const DOT_BASE=AST.length, LAZY_CAP=160, DOT_TOTAL=DOT_BASE+LAZY_CAP;
+  const dotPos=new Float32Array(DOT_TOTAL*3), dotCol=new Float32Array(DOT_TOTAL*3);
+  for(let i=DOT_BASE;i<DOT_TOTAL;i++){ dotPos[i*3]=dotPos[i*3+1]=dotPos[i*3+2]=99999; }
   const dotGeo=new THREE.BufferGeometry();
   dotGeo.setAttribute('position',new THREE.BufferAttribute(dotPos,3));
   dotGeo.setAttribute('color',new THREE.BufferAttribute(dotCol,3));
@@ -431,8 +435,13 @@
     transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}));
   scene.add(dots);
 
+  // slot → asteroid map (for picking) and the spare-slot free list
+  const slotEl=new Array(DOT_TOTAL).fill(null);
+  const freeSlots=[]; for(let i=DOT_TOTAL-1;i>=DOT_BASE;i--) freeSlots.push(i);
+  const lazyEls=new Set();
+
   // per-asteroid trail line
-  AST.forEach(el=>{
+  function makeTrail(el){
     const g=new THREE.BufferGeometry();
     g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(TRAIL_K*3),3));
     g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(TRAIL_K*3),3));
@@ -441,7 +450,54 @@
       blending:THREE.AdditiveBlending,depthWrite:false}));
     line.frustumCulled=false; scene.add(line);
     el.line=line; el.samp=[]; el.lastSampJd=null; el.dim=false;
-  });
+  }
+  AST.forEach(el=>{ makeTrail(el); slotEl[el.idx]=el; });
+
+  // ── on-demand asteroids: build any catalogued object (by name) that isn't in the
+  //    swarm, so charts can fly to / spotlight far or large asteroids the swarm omits.
+  function rawByName(name){ name=(name||'').toLowerCase(); return astData.asteroids.find(a=>(a.short_name||'').toLowerCase()===name); }
+  function sampleEvent(el,a){
+    let bestJd=START_JD,bestLd=Infinity;
+    for(let jd=START_JD;jd<=END_JD;jd+=10){
+      const d=posAt(el,jd,AU).clone().sub(posAt(EARTH,jd,AU)).length()/AU*AU_TO_LD;
+      if(d<bestLd){bestLd=d;bestJd=jd;}
+    }
+    const p0=posAt(el,bestJd-0.5,AU).clone().sub(posAt(EARTH,bestJd-0.5,AU));
+    const p1=posAt(el,bestJd+0.5,AU).clone().sub(posAt(EARTH,bestJd+0.5,AU));
+    const v=p1.sub(p0).length()/AU*149597870.7/86400;
+    const moidLd=(a.min_orbit_intersection!=null)?a.min_orbit_intersection*AU_TO_LD:bestLd;
+    el.event={name:a.short_name,date:dateStrFromJd(bestJd),year:new Date(msFromJd(bestJd)).getUTCFullYear(),
+      miss_distance_ld:moidLd,miss_distance_au:moidLd/AU_TO_LD,velocity_kms:v};
+    el.eventJd=bestJd;
+  }
+  function materialize(name){
+    const key=(name||'').toLowerCase();
+    const ex=AST_BY_NAME[key]; if(ex) return ex;
+    const a=rawByName(name); if(!a||a.epoch==null||a.mean_motion==null||a.mean_anomaly==null) return null;
+    let slot=freeSlots.pop();
+    if(slot==null){ for(const e of lazyEls){ if(e!==selected){ dematerialize(e); break; } } slot=freeSlots.pop(); }
+    if(slot==null) return null;
+    const el=prep({a:a.semi_major_axis,e:a.eccentricity,inc:a.inclination,node:a.ascending_node_longitude,
+      peri:a.perihelion_argument,M0:a.mean_anomaly,n:a.mean_motion,epoch:a.epoch,ref:a,haz:!!a.potentially_hazardous});
+    const cas=(CA_BY_NAME[a.short_name]||[]).filter(c=>c.year>=2025&&c.year<=2125);
+    if(cas.length){ let best=cas[0]; for(const c of cas) if(c.miss_distance_ld<best.miss_distance_ld) best=c;
+      el.event=best; el.eventJd=jdFromDateStr(best.date); }
+    else sampleEvent(el,a);
+    makeTrail(el);
+    el.idx=slot; el.hidden=false; el.lazy=true;
+    slotEl[slot]=el; AST.push(el); AST_BY_NAME[key]=el; lazyEls.add(el);
+    return el;
+  }
+  function dematerialize(el){
+    if(!el||!el.lazy) return;
+    scene.remove(el.line); el.line.geometry.dispose(); el.line.material.dispose();
+    dotPos[el.idx*3]=dotPos[el.idx*3+1]=dotPos[el.idx*3+2]=99999;
+    dotCol[el.idx*3]=dotCol[el.idx*3+1]=dotCol[el.idx*3+2]=0;
+    slotEl[el.idx]=null; freeSlots.push(el.idx);
+    const i=AST.indexOf(el); if(i>=0) AST.splice(i,1);
+    delete AST_BY_NAME[el.ref.short_name.toLowerCase()];
+    lazyEls.delete(el);
+  }
 
   // selected highlight: a ring marker + connector line to Earth
   const selRing=new THREE.Mesh(new THREE.RingGeometry(0.08,0.1,40),
@@ -588,9 +644,11 @@
     $('search').value=''; $('results').classList.remove('show');
   }
   function deselect(){
+    const wasLazy=(selected&&selected.lazy)?selected:null;
     selected=null;following=false;
     $('card').classList.remove('show');selRing.material.opacity=0;link.material.opacity=0;
     selTick.style.display='none';$('status').textContent='';
+    if(wasLazy) dematerialize(wasLazy);
   }
 
   // ── SEARCH + FILTER ──────────────────────────────────────────────────────────
@@ -647,7 +705,7 @@
     ndc.set(((cx-r.left)/r.width)*2-1,-((cy-r.top)/r.height)*2+1);
     ray.setFromCamera(ndc,camera);
     const hits=ray.intersectObject(dots);
-    for(const h of hits){const el=AST[h.index];if(el&&!el.hidden&&(!selected||el===selected))return el;}
+    for(const h of hits){const el=slotEl[h.index];if(el&&!el.hidden&&(!selected||el===selected))return el;}
     const lines=AST.filter(el=>!el.hidden&&el.samp.length>=6&&(!selected||el===selected)).map(el=>el.line);
     const lineHits=ray.intersectObjects(lines);
     if(lineHits.length){
@@ -920,7 +978,7 @@
       case 'guide':   guided=!!m.on; showChrome(!guided); document.body.classList.toggle('guided',guided); if(guided) tip.style.display='none'; break;
       case 'timeline': guidedTimeline=!!m.on; document.body.classList.toggle('timeline-on',guidedTimeline); showChrome(!guided); break;
       case 'focus': {
-        const el=AST_BY_NAME[(m.name||'').toLowerCase()];
+        const el=AST_BY_NAME[(m.name||'').toLowerCase()] || materialize(m.name);
         if(el){ selectAst(el, m.jump!==false); if(m.preset) preset(m.preset); if(m.card===false) $('card').classList.remove('show'); else showCard(el); reply('focused',{name:el.ref.short_name}); }
         else reply('absent',{name:m.name});
         break; }
@@ -930,7 +988,21 @@
       case 'rings':     ringsAlphaGoal=m.on?1:0; break;
       case 'asteroids': astAlphaGoal=m.on?1:0; break;
       case 'filter':    setFilterKind(m.kind); break;
-      case 'highlight': SPOT=(m.names&&m.names.length)?new Set(m.names):null; break;
+      case 'highlight': {
+        SPOT=(m.names&&m.names.length)?new Set(m.names):null;
+        // drop any previously lazy-added highlight rocks (keep the focused one)
+        for(const e of [...lazyEls]){ if(e!==selected && e._lazyHi){ dematerialize(e); } }
+        // on an explicit chart CLICK (materialize), pull off-swarm band members into the
+        // scene so the highlighted distance band actually lights up, not just the few in-swarm.
+        if(SPOT && m.materialize){
+          let budget=Math.min(LAZY_CAP-1, freeSlots.length);
+          for(const nm of m.names){
+            if(budget<=0) break;
+            if(AST_BY_NAME[nm.toLowerCase()]) continue;
+            const el=materialize(nm); if(el){ el._lazyHi=true; budget--; }
+          }
+        }
+        break; }
       case 'camera':    preset(m.preset); break;
       case 'date':      simJd=jdFromDateStr(m.date); clearTrails(); setPlaying(false); break;
       case 'play':      setPlaying(!!m.on); break;

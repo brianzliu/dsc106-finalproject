@@ -146,7 +146,7 @@
         .ovl.show{opacity:1;transform:none;pointer-events:auto;}
         .ovl .panel{height:100%;width:100%;background:none;border:none;border-radius:0;padding:clamp(26px,4vw,62px);
             backdrop-filter:none;box-shadow:none;display:flex;flex-direction:column;justify-content:center;}
-        #ovlCmp .panel{display:grid;grid-template-rows:auto 1fr;align-content:stretch;row-gap:12px;min-height:92vh;}
+        #ovlCmp .panel{display:grid;grid-template-rows:auto 1fr;grid-template-columns:1fr;justify-items:start;align-content:stretch;row-gap:12px;min-height:92vh;}
         .ovl .otitle{font-family:var(--serif);font-size:clamp(28px,2.6vw,40px);line-height:1.06;margin-bottom:6px;color:#fff;letter-spacing:-0.015em;}
         .ovl .ohead{font-family:var(--serif);font-size:20px;line-height:1.15;margin-bottom:3px;}
         .ovl .osub{font-size:clamp(16px,1.25vw,20px);color:var(--soft);line-height:1.5;margin-bottom:20px;max-width:900px;}
@@ -185,9 +185,18 @@
         .step .n::before{content:"";width:26px;height:1px;background:var(--amber);}
         .step h2{font-size:clamp(34px,3.5vw,54px);line-height:1.06;margin:0 0 24px;letter-spacing:-0.015em;}
         .step h2 em{color:var(--cyan);} .step h2 .co{color:var(--coral);font-style:normal;}
-        .step p{color:var(--dim);font-size:clamp(15px,1.15vw,17px);line-height:1.8;margin:0 0 20px;}
+        .step p{color:var(--dim);font-size:clamp(18px,1.4vw,21px);line-height:1.72;margin:0 0 22px;}
         .step p:last-child{margin-bottom:0;}
-        .step p strong{color:var(--ink);} .step p .hl{color:var(--amber);}
+        .step p strong{color:var(--ink);font-weight:600;} .step p .hl{color:var(--amber);font-weight:600;}
+        /* watch-video link in the opening step */
+        .watch-link{display:inline-flex;align-items:center;gap:9px;margin-top:4px;text-decoration:none;
+            font-family:var(--sans);font-size:15px;color:var(--soft);transition:color 0.2s ease;}
+        .watch-link svg{flex-shrink:0;color:#ff4d4d;transition:transform 0.2s ease;}
+        .watch-link:hover{color:var(--ink);} .watch-link:hover svg{transform:scale(1.08);}
+        .title-links{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:center;margin-top:28px;}
+        .title-links .watch-link{margin-top:0;font-size:14px;letter-spacing:0.02em;}
+        .watch-link.gh svg{color:var(--soft);}
+        .watch-link.gh:hover svg{color:var(--ink);}
         .step .big{font-family:var(--serif);font-size:52px;line-height:1;color:var(--cyan);margin:4px 0 2px;}
         .step .big.co{color:var(--coral);}
         .stat-row{display:flex;gap:26px;margin:22px 0 4px;flex-wrap:wrap;}
@@ -237,13 +246,19 @@
         .annot-line.co{stroke:var(--coral);} .annot-line.cy{stroke:var(--cyan);}
 
         /* comparison beat */
-        .cmp-row{display:flex;align-items:center;gap:10px;height:100%;min-height:0;margin:0;justify-content:space-between;align-self:center;transform:translateY(-14vh);}
+        .cmp-row{display:flex;align-items:center;gap:10px;height:100%;min-height:0;margin:0;justify-content:space-between;align-self:center;}
+        /* center the row against the full viewport, not just the area under the title */
+        #ovlCmp .cmp-row{position:absolute;left:clamp(26px,4vw,62px);right:clamp(26px,4vw,62px);
+            top:50%;transform:translateY(-50%);height:auto;}
         .cmp{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:default;position:relative;}
         .cmp .disc{width:260px;height:260px;display:flex;align-items:center;justify-content:center;position:relative;border-radius:50%;
-            transition:transform 0.5s cubic-bezier(0.22,1,0.36,1),background 0.25s ease,box-shadow 0.25s ease;}
-        .cmp.linked .disc::before{content:"";position:absolute;inset:14px;border-radius:34px;background:rgba(127,216,255,0);border:1px solid transparent;transition:all 0.25s ease;}
-        .cmp.linked:hover .disc{transform:translateY(-6px) scale(1.04);background:rgba(127,216,255,0.04);box-shadow:0 0 48px rgba(127,216,255,0.16);}
-        .cmp.linked:hover .disc::before{background:rgba(127,216,255,0.08);border-color:rgba(127,216,255,0.34);}
+            transition:transform 0.5s cubic-bezier(0.22,1,0.36,1);}
+        /* a soft glow that radiates outward from the asteroid itself, not a hard blob */
+        .cmp.linked .disc::before{content:"";position:absolute;inset:-30px;border-radius:50%;pointer-events:none;
+            background:radial-gradient(circle at 50% 50%,rgba(127,216,255,0.30),rgba(127,216,255,0.10) 38%,transparent 68%);
+            opacity:0;transition:opacity 0.3s ease;}
+        .cmp.linked:hover .disc{transform:translateY(-6px) scale(1.05);}
+        .cmp.linked:hover .disc::before{opacity:1;}
         .cmp .disc svg{position:relative;z-index:1;display:block;width:auto;height:auto;overflow:visible;filter:drop-shadow(0 4px 14px rgba(0,0,0,0.5));}
         .cmp .nm{font-family:var(--serif);font-size:clamp(25px,1.9vw,36px);color:#fff;margin-top:18px;text-align:center;line-height:1.05;letter-spacing:-0.01em;}
         .cmp .dia{font-family:var(--mono);font-size:18px;color:var(--ink);font-weight:600;margin-top:9px;text-align:center;}
@@ -278,8 +293,20 @@
         .rung .meter i{position:absolute;left:0;top:0;height:100%;border-radius:7px;transition:width 0.9s cubic-bezier(0.22,1,0.36,1);}
         .rung .cnt{font-family:var(--serif);font-size:38px;text-align:right;}
         .rung.zero .cnt{color:var(--cyan);} .rung.zero .meter i{background:rgba(127,216,255,0.5)!important;}
-        .threshold-detail{display:grid;grid-template-columns:190px 1fr;gap:18px;min-height:520px;border-left:1px solid var(--line);padding-left:28px;}
-        .threshold-list{display:flex;flex-direction:column;gap:9px;max-height:520px;overflow:auto;padding-right:6px;}
+        .threshold-detail{display:grid;grid-template-columns:200px 1fr;gap:18px;min-height:520px;border-left:1px solid var(--line);padding-left:28px;}
+        .threshold-listwrap{display:flex;flex-direction:column;min-height:0;max-height:560px;}
+        .threshold-listwrap .threshold-list{flex:1;}
+        .threshold-list{display:flex;flex-direction:column;gap:9px;max-height:520px;overflow-y:auto;overscroll-behavior:contain;padding-right:10px;
+            scrollbar-width:thin;scrollbar-color:rgba(127,216,255,0.45) rgba(255,255,255,0.06);
+            mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);
+            -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);}
+        .threshold-list::-webkit-scrollbar{width:9px;}
+        .threshold-list::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:6px;}
+        .threshold-list::-webkit-scrollbar-thumb{background:rgba(127,216,255,0.42);border-radius:6px;border:2px solid transparent;background-clip:padding-box;}
+        .threshold-list::-webkit-scrollbar-thumb:hover{background:rgba(127,216,255,0.7);background-clip:padding-box;}
+        .threshold-scrollcue{font-family:var(--mono);font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);
+            text-align:center;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:7px;}
+        .threshold-scrollcue::after{content:"⌄";font-size:13px;color:var(--cyan);animation:cuepulse 1.8s ease-in-out infinite;}
         .threshold-list button{appearance:none;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.035);color:var(--soft);
             border-radius:10px;padding:10px 12px;text-align:left;font-family:var(--sans);font-size:16px;line-height:1.2;cursor:pointer;transition:background 0.2s,border-color 0.2s,color 0.2s;}
         .threshold-list button b{display:block;font-family:var(--serif);font-size:23px;line-height:1.05;color:#fff;font-weight:400;letter-spacing:-0.01em;}
@@ -307,6 +334,17 @@
         .writeup h3{font-size:24px;border-bottom:1px solid var(--line);padding-bottom:12px;margin:30px 0 8px;}
         .writeup p{color:var(--dim);font-size:13.5px;}
         .writeup strong{color:var(--ink);}
+        .proj-notes{border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,0.02);padding:0 22px;margin-top:8px;}
+        .proj-notes summary{cursor:pointer;list-style:none;font-family:var(--serif);font-size:20px;color:var(--ink);
+            padding:18px 0;display:flex;align-items:center;gap:12px;user-select:none;}
+        .proj-notes summary::-webkit-details-marker{display:none;}
+        .proj-notes summary::before{content:"+";font-family:var(--mono);font-size:20px;color:var(--cyan);width:18px;
+            text-align:center;transition:transform 0.2s ease;}
+        .proj-notes[open] summary::before{content:"−";}
+        .proj-notes summary:hover{color:#fff;}
+        .proj-notes p{padding-bottom:4px;}
+        .proj-notes p:last-child{padding-bottom:20px;}
+        .proj-notes a{color:var(--cyan);text-decoration:none;border-bottom:1px solid var(--line);}
         .divider{width:60px;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan));margin:42px auto;border-radius:2px;}
         footer{text-align:center;color:var(--faint);font-size:11px;letter-spacing:0.1em;padding:30px;border-top:1px solid var(--line);background:var(--bg);position:relative;z-index:3;}
         footer a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line);}
@@ -320,6 +358,16 @@
         <div class="title-inner">
             <h1 id="titleCardHeading">Charting a Century of Asteroid <em>Near Misses</em></h1>
             <button class="title-start" id="startStory" type="button">Start</button>
+            <div class="title-links">
+                <a class="watch-link" href="https://www.youtube.com/watch?v=sqG0Cpe2XpQ" target="_blank" rel="noopener">
+                    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="#ff4d4d" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"/><path fill="#fff" d="M9.6 15.6V8.4l6.2 3.6z"/></svg>
+                    Watch our demo video
+                </a>
+                <a class="watch-link gh" href="https://github.com/brianzliu/dsc106-finalproject" target="_blank" rel="noopener">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.2.8-.5v-1.8c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0C17 4.4 18 4.7 18 4.7c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.6.8.5 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+                    View the code on GitHub
+                </a>
+            </div>
         </div>
     </section>
 
@@ -348,7 +396,7 @@
                 </div>
                 <div class="pro-text" id="pb2">
                     <p>The difference now is observation. <em>The sky is no longer unmeasured.</em></p>
-                    <p class="pro-turn">We now have access to physical measurements of asteroids that allow us to predict their trajectories—and how much of a threat they are.</p>
+                    <p class="pro-turn">We now have physical measurements of these asteroids, enough to predict where they will go and how much of a threat they pose to Earth.</p>
                 </div>
             </div>
             <div class="prologue-cue" id="proCue"><div class="pcarrow"></div></div>
@@ -367,13 +415,13 @@
                 <!-- overlay panels (one shown per relevant step) — these REPLACE the scene -->
                 <div class="ovl" id="ovlHist"><div class="panel">
                     <div class="otitle">Most close approaches are not especially close</div>
-                    <div class="osub">Measured in lunar distances, the typical pass in this century sits far beyond the Moon. The median is <strong>79 LD</strong>; the red line marks one lunar distance.</div>
+                    <div class="osub">Measured in lunar distances, the typical pass in this century sits far beyond the Moon. The median is <strong>79 LD</strong>, and the red line marks one lunar distance.</div>
                     <div id="histChart"></div>
                 </div></div>
 
                 <div class="ovl" id="ovlScatter"><div class="panel">
                     <div class="otitle">The largest objects stay away</div>
-                    <div class="osub">Diameter rises vertically, closest pass runs horizontally. The region that would matter most — large and near at once — remains empty in this catalog.</div>
+                    <div class="osub">Diameter rises vertically, closest pass runs horizontally. The region that would matter most, large and near at once, stays empty in this catalog.</div>
                     <div id="scatterChart"></div>
                 </div></div>
 
@@ -383,7 +431,10 @@
                     <div class="threshold-layout">
                         <div class="ladder" id="ladder"></div>
                         <div class="threshold-detail" id="thresholdDetail">
-                            <div class="threshold-list" id="thresholdList"></div>
+                            <div class="threshold-listwrap">
+                                <div class="threshold-list" id="thresholdList"></div>
+                                <div class="threshold-scrollcue" id="thresholdScrollCue">scroll the list</div>
+                            </div>
                             <div class="asteroid-sheet" id="asteroidSheet">
                                 <canvas id="thresholdAvatar" width="360" height="300"></canvas>
                                 <div class="sheet-copy">
@@ -411,65 +462,65 @@
 
             <section class="step" data-step="bearings"><div class="card">
                 <h2>First, get your <em>bearings</em>.</h2>
-                <p>The inner solar system is mostly empty space organized by motion: the Sun at the center, the planets moving around it, and Earth following its own narrow path.</p>
-                <p>In the next view, the planets step back. What remains are the smaller bodies whose orbits bring them near ours.</p>
+                <p>The inner solar system is mostly <strong>empty space</strong>, organized by motion. The <strong>Sun</strong> sits at the center, the planets circle it, and <strong>Earth</strong> holds its own narrow orbit.</p>
+                <p>So before we count any threats, we get our bearings here. Then the planets step back and we drop in close to Earth.</p>
             </div></section>
 
             <section class="step" data-step="primerOne"><div class="card">
                 <h2>Begin with a single orbit.</h2>
-                <p>The glowing point is one asteroid. Its tail shows how it moves relative to Earth, while the rings give the distance in lunar distances — the gap between Earth and the Moon.</p>
+                <p>The glowing point is a <strong>single asteroid</strong>. Its tail traces how it moves relative to Earth, and the rings mark distance in <strong>lunar distances</strong>. One LD is the gap between Earth and the Moon.</p>
             </div></section>
 
             <section class="step" data-step="primerHaz"><div class="card">
                 <h2>Red means monitored, not doomed.</h2>
-                <p>A red asteroid has been flagged as <strong class="co">potentially hazardous</strong>. In practice, that means it is large enough and its orbit passes close enough to Earth’s orbit to merit repeated measurement.</p>
+                <p>A red dot is flagged <strong class="co">potentially hazardous</strong>, and that word sounds alarming. But it is really a bookkeeping label. The object is <strong>big enough</strong>, and its orbit runs <strong>close enough</strong> to Earth's, that we keep measuring it.</p>
             </div></section>
 
             <section class="step" data-step="population"><div class="card">
                 <h2>The catalog is much larger than one object.</h2>
-                <p>Each dot is a near-Earth asteroid from this sample, moving in relation to Earth. The point of the scene is not to imply chaos, but to show the volume of objects that can be measured and compared.</p>
+                <p>Every dot is a <strong>near-Earth asteroid</strong>, and each rides its own measured orbit. It looks crowded, but this is not chaos. It is simply the <strong>full population</strong> we can track and compare at once.</p>
             </div></section>
 
             <section class="step" data-step="hazardous"><div class="card">
                 <h2><span class="co">533</span> are marked for closer attention.</h2>
-                <p>The threshold is practical rather than apocalyptic: roughly larger than 140&nbsp;m, with an orbit that comes within 0.05&nbsp;AU of Earth’s orbit.</p>
-                <p>That label is the beginning of monitoring, not the end of analysis. It says the object is worth watching; it does not say the object is going to hit us.</p>
+                <p>The cutoff is bureaucratic, not apocalyptic. An object has to be bigger than about <strong>140&nbsp;m</strong>, and its orbit has to pass within <strong>0.05&nbsp;AU</strong> of Earth's.</p>
+                <p>But the label only starts the watching. It means <strong>keep an eye on this one</strong>, not that it's headed for us.</p>
             </div></section>
 
             <section class="step" data-step="distribution"><div class="card">
                 <h2>In astronomy, close still leaves room.</h2>
-                <p>Across 13,691 projected approaches this century, the typical pass misses by <span class="hl">79 lunar distances</span>. That is far outside the Moon’s orbit.</p>
-                <p>The chart turns that scale into a distribution. Moving across the bars shows what each distance band would look like around Earth.</p>
+                <p>Across <strong>13,691</strong> projected approaches this century, the typical pass misses by <span class="hl">79 lunar distances</span>. That sounds close, but it sits far beyond the Moon's orbit.</p>
+                <p>So the chart spreads those misses into a distribution. <strong>Sweep across the bars</strong> to see what each distance band looks like around Earth.</p>
             </div></section>
 
             <section class="step" data-step="size"><div class="card">
                 <h2>The close passers tend to be small.</h2>
-                <p>A dinosaur-scale impact requires two things at once: a very large object and a trajectory that reaches Earth.</p>
-                <p>When size and closest approach are plotted together, the largest objects sit far away, while the nearest passers are much smaller.</p>
+                <p>A dinosaur-scale impact needs <strong>two things at once</strong>. It takes a very large object <em>and</em> a path that actually reaches Earth.</p>
+                <p>But plot size against closest pass and the corner that would matter, <strong>big and near</strong>, stays empty. The giants keep their distance, and the close ones stay small.</p>
             </div></section>
 
             <section class="step" data-step="thresholds"><div class="card">
                 <h2>The thresholds separate scale from trajectory.</h2>
-                <p>Many objects in the sample are large enough to matter if they struck Earth, and a much smaller group is large enough to have global consequences.</p>
-                <p>But the final threshold is not size. It is an actual collision course. None of the 2,000 objects in this view crosses that line.</p>
+                <p>Plenty of these asteroids are <strong>big enough to wreck a region</strong> if they hit, and a smaller group could go <strong>global</strong>.</p>
+                <p>But the last threshold isn't about size at all. It's an <strong>actual collision course</strong>, and none of the 2,000 asteroids here crosses it.</p>
             </div></section>
 
             <section class="step" data-step="chicxulub"><div class="card">
                 <h2 id="cmpNarrTitle" class="cmp-focus">Some nearby asteroids are enormous.</h2>
-                <p id="cmpNarrP1" class="cmp-focus">The comparison on the right is a scale check. Some near-Earth asteroids are larger than the Chicxulub impactor, while others are closer or better known.</p>
-                <p id="cmpNarrP2" class="cmp-focus">Those facts have to be read separately. Size, closeness and an Earth-crossing path are different ingredients of risk.</p>
+                <p id="cmpNarrP1" class="cmp-focus">The row on the right is a scale check. A few near-Earth asteroids dwarf the Chicxulub impactor, and others come closer or are simply better studied.</p>
+                <p id="cmpNarrP2" class="cmp-focus">But you have to read those facts separately. Size, closeness, and an Earth-crossing path are three different ingredients, and real danger needs all three at once.</p>
             </div></section>
 
             <section class="step" data-step="apophisContext"><div class="card">
                 <h2>Apophis is why early numbers need context.</h2>
-                <p>When <strong>Apophis</strong> was discovered in 2004, astronomers had only a short arc of observations. The first orbit estimates left enough uncertainty that a 2029 impact could not immediately be ruled out.</p>
-                <p>That uncertainty was temporary. More observations narrowed the orbit, and the risk estimates changed with the measurements.</p>
+                <p>When <strong>Apophis</strong> turned up in 2004, astronomers had only a short arc of observations. The early orbit carried enough uncertainty that a <strong>2029 impact</strong> couldn't be ruled out yet.</p>
+                <p>But that uncertainty was temporary. <strong>More observations</strong> tightened the orbit, and the risk fell as the measurements sharpened.</p>
             </div></section>
 
             <section class="step" data-step="apophis"><div class="card">
                 <h2>The 2029 flyby is real. The impact is not.</h2>
-                <p>With better data, the 2029 impact risk disappeared, and later measurements ruled out an impact for at least the next century.</p>
-                <p>On <strong>13 April 2029</strong>, Apophis will still pass about <strong class="co">38,000&nbsp;km</strong> from Earth. The scene follows that close flyby as the distance falls and then grows again.</p>
+                <p>Better data erased the 2029 risk, and later tracking ruled out any impact for <strong>at least a century</strong>.</p>
+                <p>But it will still make a genuinely close pass. On <strong>13 April 2029</strong>, Apophis sweeps about <strong class="co">38,000&nbsp;km</strong> from Earth, nearer than many satellites, so watch the distance fall and then open back up.</p>
                 <div class="apo-inset">
                     <svg id="apoMini" viewBox="0 0 460 280" role="img" aria-label="Apophis 2029 pass, to scale"></svg>
                 </div>
@@ -477,8 +528,8 @@
 
             <section class="step" data-step="explore"><div class="card">
                 <h2>Now the catalog is yours to inspect.</h2>
-                <p>The controls return so you can search for a name, isolate monitored objects or follow one asteroid through time.</p>
-                <p>The larger pattern should now be easier to read: there are many close approaches, but the measured paths in this sample pass Earth rather than intersecting it.</p>
+                <p>The controls come back now, so you can search by name, isolate the monitored set, or lock onto a single asteroid and follow it through the century.</p>
+                <p>The pattern should read clearly by now. There are <strong>plenty of close approaches</strong>, but every measured path in this sample slides past Earth, not through it.</p>
             </div></section>
 
         </div>
@@ -489,17 +540,17 @@
         <div class="writeup">
             <h2>So, should we be worried?</h2>
             <div class="sub">What the measurements show.</div>
-            <p>The catalog is not a promise that impacts can never happen. It is a measurement system, and that distinction matters. In this sample of 2,000 near-Earth asteroids, the projected approaches miss by a median of 79 lunar distances. The largest objects stay distant, the closest passers are small, and Apophis shows why repeated observations matter: better measurements can turn an early concern into a well-understood flyby.</p>
+            <p>No, not from anything in this catalog. Every one of the 2,000 near-Earth asteroids tracked here clears Earth on every projected pass this century, and the typical one misses by 79 lunar distances. The largest asteroids stay distant, and the few that come close stay small. Even Apophis, the object that once carried a real impact scare, now reads as an ordinary flyby. None of that promises that nothing will ever strike us. But a catalog was never meant to make that promise. Its job is to measure what is out there, and that measurement is what turned a fear into a number.</p>
 
             <div class="divider"></div>
 
-            <h3>Initial Prototype Writeup</h3>
-            <p><strong>1. What have you done so far?</strong></p>
-            <p>Our team, The Pickle Farmers, finalized our dataset (NASA's Near-Earth Asteroids set), built a data pipeline that cleans the 2,000-object catalog, derives each asteroid's time-propagation elements, and flattens ~42,000 Earth close-approach events. On top of it we built a Three.js "Orbital Theater" that propagates every asteroid through a century with Kepler's equation — and rebuilt the whole explanation as a scrollytelling experience where that 3-D scene is the persistent centerpiece: the narrative scrolls past it and <strong>drives</strong> it, flying the camera to specific asteroids, toggling the hazardous set, and surfacing scene-linked D3 charts at each beat. Selecting any asteroid grades it live against the impact and extinction thresholds.</p>
-            <p><strong>2. What will be the most challenging part of your project to design and why?</strong></p>
-            <p>The hardest part is the seamless coupling between the scrolling 2-D narrative and the live 3-D scene: propagating thousands of orbits every frame without dropping frames, choreographing camera transitions from a macro view down to a single close approach, and keeping the simulation clock, the chart overlays, and the live annotations all in sync as the reader scrolls. Keeping the user oriented through those dynamic, scroll-driven camera moves is the central UX challenge, and it has taken heavy iteration.</p>
+            <details class="proj-notes">
+                <summary>How we built this</summary>
+                <p>Our team, the Pickle Farmers, started from NASA's Near-Earth Asteroids dataset and built a pipeline that cleans the 2,000-object catalog, derives each asteroid's time-propagation elements, and flattens roughly 42,000 Earth close-approach events. On top of that sits a Three.js orbital theater that propagates every asteroid across a century using Kepler's equation. We wrapped the whole explanation in a scrollytelling format where that 3-D scene stays on stage the entire time. The narrative scrolls alongside it and <strong>drives</strong> it, flying the camera to named asteroids, toggling the hazardous set, and surfacing linked D3 charts at each beat. Select any asteroid and it gets graded live against the impact and extinction thresholds.</p>
+                <p>The hard part was the coupling between the scrolling narrative and the live scene. We had to propagate thousands of orbits every frame without dropping below 60&nbsp;fps, choreograph camera moves from a system-wide view down to a single close pass, and keep the clock, the chart overlays, and the on-screen labels in sync as the reader scrolls. Keeping a reader oriented through those moving, scroll-driven shots was the central design problem, and it took a lot of iteration to land.</p>
+                <p><a href="NARRATIVE.md">Read the full written narrative →</a></p>
+            </details>
         </div>
-        <footer>NASA Near-Earth Object data · JPL Small-Body Database · Three.js · tsParticles · D3 · <a href="NARRATIVE.md">Read the full written narrative →</a></footer>
     </div>
 
     <div class="tooltip" id="tooltip"></div>
@@ -804,7 +855,7 @@
             .on('mouseleave',function(){d3.select(this).attr('opacity',0.92);hideTip();send({type:'highlight',names:null});})
             .on('click',function(ev,d){ const names=named.filter(o=>o.ld>=d.x0&&o.ld<d.x1).map(o=>o.name);
                 hideTip();
-                revealScene([{type:'clearFocus'},{type:'filter',kind:'all'},{type:'camera',preset:'top'},{type:'highlight',names}]); });
+                revealScene([{type:'clearFocus'},{type:'filter',kind:'all'},{type:'camera',preset:'top'},{type:'highlight',names,materialize:true}]); });
         svg.append('g').attr('transform',`translate(0,${ih})`).call(d3.axisBottom(x).ticks(8));
         svg.append('g').call(d3.axisLeft(y).ticks(5));
         svg.append('text').attr('class','axis-label').attr('x',iw/2).attr('y',ih+70).style('text-anchor','middle').text('miss distance — lunar distances (LD)');
@@ -841,7 +892,7 @@
             .on('mouseleave',function(){d3.select(this).attr('stroke','rgba(4,6,15,0.5)').attr('stroke-width',0.5);hideTip();});
         // empty danger corner
         svg.append('rect').attr('x',0).attr('y',0).attr('width',x(5)).attr('height',y(1000)).attr('fill','rgba(255,122,114,0.05)').attr('stroke','rgba(255,122,114,0.3)').attr('stroke-dasharray','5 4').attr('rx',3);
-        svg.append('text').attr('class','annot co').attr('x',10).attr('y',18).text('big & close — empty');
+        svg.append('text').attr('class','annot co').attr('x',10).attr('y',18).text('big and close, empty');
         // notable, clickable rocks float on top of the density
         const want=new Set(['Apophis','Florence','Phaethon','Eros']);
         const notable=data.filter(d=>want.has(d.name));
@@ -864,6 +915,46 @@
         svg.append('text').attr('class','annot').attr('x',iw-2).attr('y',y(12000)-6).style('text-anchor','end').text('Chicxulub ≈12km');
     }
 
+    // ── shared 3-D asteroid mesh — one deterministic (per-name) cratered rock used by
+    //    BOTH the threshold detail avatar and the size-comparison row, so the same body
+    //    reads identically everywhere it appears. ──
+    function seededRand(name){
+        let h=2166136261; for(let i=0;i<name.length;i++){h^=name.charCodeAt(i);h=Math.imul(h,16777619);}
+        return ()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
+    }
+    function buildAsteroidGroup(name, colorHex, emissiveHex, radius){
+        const rnd=seededRand(name);
+        // smooth low-frequency lobes give a rounded, rolling body rather than a sharp crystal
+        const lobes=[];
+        for(let i=0;i<5;i++) lobes.push({
+            ax:new THREE.Vector3(rnd()*2-1,rnd()*2-1,rnd()*2-1).normalize(),
+            f:1+Math.floor(rnd()*3), ph:rnd()*Math.PI*2, amp:0.05+rnd()*0.09
+        });
+        const group=new THREE.Group();
+        const geo=new THREE.IcosahedronGeometry(radius,5);   // high subdivision → smooth silhouette
+        const pos=geo.attributes.position, v=new THREE.Vector3();
+        for(let i=0;i<pos.count;i++){
+            v.set(pos.getX(i),pos.getY(i),pos.getZ(i));
+            const dir=v.clone().normalize();
+            let disp=1;
+            for(const l of lobes){ const ang=Math.acos(Math.max(-1,Math.min(1,dir.dot(l.ax)))); disp+=l.amp*Math.sin(ang*l.f+l.ph); }
+            v.multiplyScalar(disp);
+            pos.setXYZ(i,v.x,v.y,v.z);
+        }
+        geo.computeVertexNormals();
+        const mat=new THREE.MeshStandardMaterial({color:colorHex,roughness:0.92,metalness:0,emissive:emissiveHex,emissiveIntensity:0.26});
+        group.add(new THREE.Mesh(geo,mat));
+        // a few shallow craters dimpled into the surface
+        const craterMat=new THREE.MeshBasicMaterial({color:0x07101b,transparent:true,opacity:0.22,depthWrite:false});
+        for(let i=0;i<4;i++){
+            const c=new THREE.Mesh(new THREE.SphereGeometry(radius*(0.10+rnd()*0.10),20,14),craterMat.clone());
+            const a=rnd()*Math.PI*2, z=rnd()*1.5-0.75, rr=Math.sqrt(1-z*z);
+            c.position.set(Math.cos(a)*rr*radius*0.9,Math.sin(a)*rr*radius*0.9,z*radius*0.9);
+            c.scale.z=0.18; c.lookAt(0,0,0); group.add(c);
+        }
+        return group;
+    }
+
     let thresholdAvatarApi=null;
     function thresholdAvatar(){
         if(thresholdAvatarApi) return thresholdAvatarApi;
@@ -877,38 +968,12 @@
         scene3.add(new THREE.AmbientLight(0x8fb4d6,0.9));
         const key=new THREE.DirectionalLight(0xffffff,1.7); key.position.set(2,2.5,3); scene3.add(key);
         const rim=new THREE.DirectionalLight(0x7fd8ff,0.9); rim.position.set(-3,1.2,-2); scene3.add(rim);
-        function seeded(name){
-            let h=2166136261; for(let i=0;i<name.length;i++){h^=name.charCodeAt(i);h=Math.imul(h,16777619);}
-            return ()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
-        }
         function clear(){ while(group.children.length){const o=group.children.pop(); o.geometry?.dispose(); o.material?.dispose?.();} }
         function setAsteroid({name,dia,haz}){
             clear();
-            const rnd=seeded(name);
             const radius=0.34+Math.min(1.2,Math.sqrt(Math.max(1,dia)/12000)*1.05);
-            const geo=new THREE.IcosahedronGeometry(radius,3);
-            const pos=geo.attributes.position;
-            for(let i=0;i<pos.count;i++){
-                const v=new THREE.Vector3(pos.getX(i),pos.getY(i),pos.getZ(i));
-                const f=0.78+rnd()*0.34;
-                v.multiplyScalar(f);
-                pos.setXYZ(i,v.x,v.y,v.z);
-            }
-            geo.computeVertexNormals();
-            const mat=new THREE.MeshStandardMaterial({
-                color:haz?0xff7a72:0x9cd7ff,
-                roughness:0.96, metalness:0,
-                emissive:haz?0x2d0706:0x061725,
-                emissiveIntensity:0.24
-            });
-            const rock=new THREE.Mesh(geo,mat); group.add(rock);
-            const craterMat=new THREE.MeshBasicMaterial({color:0x07101b,transparent:true,opacity:0.28,depthWrite:false});
-            for(let i=0;i<5;i++){
-                const c=new THREE.Mesh(new THREE.SphereGeometry(radius*(0.08+rnd()*0.09),18,12),craterMat.clone());
-                const a=rnd()*Math.PI*2, z=rnd()*1.5-0.75, rr=Math.sqrt(1-z*z);
-                c.position.set(Math.cos(a)*rr*radius*0.82,Math.sin(a)*rr*radius*0.82,z*radius*0.82);
-                c.scale.z=0.22; c.lookAt(0,0,0); group.add(c);
-            }
+            const g=buildAsteroidGroup(name, haz?0xff7a72:0x9cd7ff, haz?0x2d0706:0x061725, radius);
+            g.children.slice().forEach(ch=>group.add(ch));   // reparent so clear() can dispose them
         }
         function frame(){
             requestAnimationFrame(frame);
@@ -938,6 +1003,8 @@
             {id:'collision',lab:'Collision course', sub:'paths that hit Earth', c:'#7fd8ff', rows:[], zero:true},
         ];
         const el=document.getElementById('ladder'), list=document.getElementById('thresholdList');
+        const scrollCue=document.getElementById('thresholdScrollCue');
+        const updateScrollCue=()=>{ if(scrollCue) scrollCue.style.display=(list.scrollHeight-list.clientHeight>4)?'flex':'none'; };
         const sheetTitle=document.getElementById('sheetTitle'), sheetKicker=document.getElementById('sheetKicker');
         const sheetStats=document.getElementById('sheetStats'), sheetAction=document.getElementById('sheetAction');
         let activeCat=categories[0], activeAst=null;
@@ -978,11 +1045,12 @@
         function openCategory(cat){
             activeCat=cat;
             document.querySelectorAll('#ladder .rung').forEach(r=>r.classList.toggle('active',r.dataset.cat===cat.id));
-            list.innerHTML='';
+            list.innerHTML=''; list.scrollTop=0;
             if(cat.zero){
                 list.innerHTML='<button class="active" type="button"><b>No asteroids</b><span>none of these paths hit Earth</span></button>';
                 showProfile(null);
                 send({type:'highlight',names:null});
+                updateScrollCue();
                 return;
             }
             cat.rows.forEach((d,i)=>{
@@ -992,11 +1060,12 @@
                 b.addEventListener('click',()=>{
                     list.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
                     b.classList.add('active');
-                    showProfile(d,true);
+                    showProfile(d,false);   // update the detail panel; "Follow in orbit" flies the scene
                 });
                 list.appendChild(b);
             });
             showProfile(cat.rows[0],false);
+            updateScrollCue();
         }
         categories.forEach(cat=>{
             const row=document.createElement('div');row.className='rung'+(cat.zero?' zero':' linked');row.dataset.cat=cat.id;
@@ -1034,22 +1103,22 @@
     const CMP_NARR={
         default:{
             h:'Some nearby asteroids are enormous.',
-            p1:'The comparison on the right is a scale check. Some near-Earth asteroids are larger than the Chicxulub impactor, while others are closer or better known.',
-            p2:'Those facts have to be read separately. Size, closeness and an Earth-crossing path are different ingredients of risk.'
+            p1:'The row on the right is a scale check. A few near-Earth asteroids dwarf the Chicxulub impactor, and others come closer or are simply better studied.',
+            p2:'But you have to read those facts separately. Size, closeness, and an Earth-crossing path are three different ingredients, and real danger needs all three at once.'
         },
         Chicxulub:{
             h:'Chicxulub is the reference point.',
             p1:'The dinosaur-killer was roughly 12 km across. That size made it capable of changing the climate after impact.',
-            p2:'The important part is the combination: it was large, fast, and on a path that actually reached Earth.'
+            p2:'The important part was the combination. It was large, fast, and on a path that actually reached Earth.'
         },
         Ganymed:{
             h:'Ganymed is the giant in this group.',
-            p1:'At about 87 km across, Ganymed is far larger than the Chicxulub impactor. By size alone, it is the most imposing object in this comparison.',
-            p2:'But its closest pass here is about 133 lunar distances away. The scale is enormous; the approach is not close.'
+            p1:'At about 87 km across, Ganymed dwarfs the Chicxulub impactor. By size alone, it is the most imposing object in this comparison.',
+            p2:'But its closest pass here is about 133 lunar distances away. The scale is enormous, and the approach is not close.'
         },
         Florence:{
             h:'Florence is large, but still far away.',
-            p1:'Florence is about 9 km across, close to Chicxulub scale. It is a useful reminder that large near-Earth asteroids do exist.',
+            p1:'Florence is about 9 km across, close to Chicxulub scale. It is a useful reminder that large near-Earth asteroids really do exist.',
             p2:'Its closest pass in this view is about 19 lunar distances, millions of kilometers from Earth. Large does not mean aimed at us.'
         },
         Phaethon:{
@@ -1060,7 +1129,7 @@
         Apophis:{
             h:'Apophis is famous because it comes close.',
             p1:'Apophis is much smaller than the dinosaur-killer, under one kilometer across. Its size is not the Chicxulub story.',
-            p2:'Its 2029 flyby is the unusual part: about 0.10 lunar distances from Earth. That close pass is why it became such a useful case study in measurement.'
+            p2:'Its 2029 flyby is the unusual part, about 0.10 lunar distances from Earth. That close pass is why it became such a useful case study in measurement.'
         }
     };
     let cmpNarrTimer=null, cmpNarrLocked=null;
@@ -1148,7 +1217,7 @@
 
         // the Moon's orbit, far out
         svg.appendChild(E('path',{d:`M ${cx-moonR} ${cy} A ${moonR} ${moonR} 0 0 1 ${cx+moonR} ${cy}`,fill:'none',stroke:'rgba(111,211,255,0.25)','stroke-width':1,'stroke-dasharray':'2 6'}));
-        txt(cx,cy-moonR-9,'the Moon — 384,000 km',{fill:'rgba(111,211,255,0.7)','text-anchor':'middle'});
+        txt(cx,cy-moonR-9,'the Moon, 384,000 km',{fill:'rgba(111,211,255,0.7)','text-anchor':'middle'});
 
         // Apophis pass + apex marker, labelled with the number only
         const apexY=cy-apoR;
@@ -1263,8 +1332,24 @@
         stepNav(dy>0?1:-1);
         setTimeout(()=>wheelStepLock=false,780);
     }
+    // when the pointer is over a scrollable inner panel (e.g. the threshold list) that
+    // can still move in the wheel's direction, let the browser scroll IT natively instead
+    // of hijacking the wheel into step navigation.
+    function innerListCanScroll(target,dy){
+        for(let n=target; n && n!==document.body; n=n.parentElement){
+            if(n.classList && n.classList.contains('threshold-list')){
+                const max=n.scrollHeight-n.clientHeight;
+                if(max<=2) return false;
+                if(dy>0) return n.scrollTop < max-1;
+                if(dy<0) return n.scrollTop > 1;
+                return false;
+            }
+        }
+        return false;
+    }
     addEventListener('wheel',e=>{
         if(!document.body.classList.contains('in-scrolly')) return;
+        if(innerListCanScroll(e.target,e.deltaY)) return;   // let the inner list scroll
         if(Math.abs(e.deltaY)<12) return;
         const idx=centeredStepIndex();
         if(idx>=STEP_ELS.length-1 && e.deltaY>0) return;
